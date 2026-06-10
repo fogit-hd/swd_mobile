@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_animations.dart';
 
-/// Giữ state tất cả tab (IndexedStack) nhưng fade mượt khi đổi tab.
-class AnimatedShellBody extends StatelessWidget {
+/// Giữ state tất cả tab, fade + slide theo hướng đổi tab.
+class AnimatedShellBody extends StatefulWidget {
   const AnimatedShellBody({
     super.key,
     required this.index,
@@ -14,20 +14,44 @@ class AnimatedShellBody extends StatelessWidget {
   final List<Widget> children;
 
   @override
+  State<AnimatedShellBody> createState() => _AnimatedShellBodyState();
+}
+
+class _AnimatedShellBodyState extends State<AnimatedShellBody> {
+  int _previousIndex = 0;
+
+  @override
+  void didUpdateWidget(AnimatedShellBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _previousIndex = oldWidget.index;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final slideFromRight = widget.index >= _previousIndex;
+
     return Stack(
       fit: StackFit.expand,
-      children: List.generate(children.length, (i) {
-        final visible = i == index;
+      children: List.generate(widget.children.length, (i) {
+        final visible = i == widget.index;
         return IgnorePointer(
           ignoring: !visible,
           child: AnimatedOpacity(
             opacity: visible ? 1 : 0,
             duration: AppAnimations.normal,
             curve: AppAnimations.curve,
-            child: TickerMode(
-              enabled: visible,
-              child: children[i],
+            child: AnimatedSlide(
+              offset: visible
+                  ? Offset.zero
+                  : Offset(slideFromRight ? -0.04 : 0.04, 0),
+              duration: AppAnimations.normal,
+              curve: AppAnimations.curve,
+              child: TickerMode(
+                enabled: visible,
+                child: widget.children[i],
+              ),
             ),
           ),
         );

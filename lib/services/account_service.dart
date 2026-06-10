@@ -2,22 +2,19 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/api_config.dart';
-import '../data/mock_account_store.dart';
 import '../models/create_account_models.dart';
+import 'api_client.dart';
+import 'auth_service.dart';
 
 class AccountService {
-  Future<void> createUser(CreateUserRequest request) async {
-    if (ApiConfig.useMockData) {
-      await Future<void>.delayed(const Duration(milliseconds: 250));
-      MockAccountStore.instance.createUser(request);
-      return;
-    }
+  AccountService(this._auth);
 
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/accounts'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
+  final AuthService _auth;
+
+  Future<void> createUser(CreateUserRequest request) async {
+    final response = await ApiClient(_auth).post(
+      '/api/accounts',
+      body: request.toJson(),
     );
 
     if (response.statusCode >= 400) {

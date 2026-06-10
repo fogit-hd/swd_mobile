@@ -34,10 +34,12 @@ class TokenResponse {
   final String? refreshToken;
 }
 
-/// Hai role duy nhất của app mobile: Panel và Moderator.
 enum AppRole {
   panel('Panel', 'EvaluationPanel', 'Hội đồng chấm'),
-  moderator('Moderator', 'Moderator', 'Điều phối viên');
+  moderator('Moderator', 'Moderator', 'Điều phối viên'),
+  lecturer('Lecturer', 'Lecturer', 'Giảng viên'),
+  student('Student', 'Student', 'Sinh viên'),
+  admin('Admin', 'SystemAdministrator', 'Quản trị viên');
 
   const AppRole(this.value, this.apiValue, this.labelVi);
 
@@ -46,15 +48,31 @@ enum AppRole {
   final String labelVi;
 
   bool get isPanel => this == AppRole.panel;
-
   bool get isModerator => this == AppRole.moderator;
+  bool get isLecturer => this == AppRole.lecturer;
+  bool get isStudent => this == AppRole.student;
+  bool get isAdmin => this == AppRole.admin;
+  bool get isModeratorOrAdmin => isModerator || isAdmin;
+
+  static const _aliases = <String, AppRole>{
+    'EvaluationPanel': AppRole.panel,
+    'Panel': AppRole.panel,
+    'Moderator': AppRole.moderator,
+    'TrainingDepartment': AppRole.moderator,
+    'Lecturer': AppRole.lecturer,
+    'Student': AppRole.student,
+    'SystemAdministrator': AppRole.admin,
+    'Admin': AppRole.admin,
+    'Administrator': AppRole.admin,
+  };
 
   static AppRole? tryParse(String? raw) {
     if (raw == null || raw.isEmpty) return null;
+
     for (final role in AppRole.values) {
       if (role.value == raw || role.apiValue == raw) return role;
     }
-    if (raw == 'EvaluationPanel') return AppRole.panel;
-    return null;
+
+    return _aliases[raw];
   }
 }

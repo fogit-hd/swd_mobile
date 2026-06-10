@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/auth_scope.dart';
 import '../../models/create_account_models.dart';
 import '../../services/account_service.dart';
 import '../../theme/app_animations.dart';
@@ -19,7 +20,7 @@ class ModeratorCreateAccountScreen extends StatefulWidget {
 class _ModeratorCreateAccountScreenState
     extends State<ModeratorCreateAccountScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _accountService = AccountService();
+  AccountService? _accountService;
 
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -51,6 +52,12 @@ class _ModeratorCreateAccountScreenState
   bool _loading = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _accountService ??= AccountService(AuthScope.of(context));
+  }
+
+  @override
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
@@ -76,7 +83,7 @@ class _ModeratorCreateAccountScreenState
 
     setState(() => _loading = true);
     try {
-      await _accountService.createUser(_buildRequest());
+      await _accountService!.createUser(_buildRequest());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

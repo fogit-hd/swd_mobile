@@ -7,24 +7,22 @@ import '../../widgets/animated_bottom_nav.dart';
 import '../../widgets/animated_shell_body.dart';
 import '../../widgets/role_guard.dart';
 import '../login_screen.dart';
-import 'catalog/board_catalog_screen.dart';
-import 'catalog/lecturer_catalog_screen.dart';
-import 'catalog/student_group_catalog_screen.dart';
+import 'lecturer_personal_schedule_screen.dart';
+import 'lecturer_review_projects_screen.dart';
 
-class ModeratorShell extends StatefulWidget {
-  const ModeratorShell({super.key});
+class LecturerShell extends StatefulWidget {
+  const LecturerShell({super.key});
 
   @override
-  State<ModeratorShell> createState() => _ModeratorShellState();
+  State<LecturerShell> createState() => _LecturerShellState();
 }
 
-class _ModeratorShellState extends State<ModeratorShell> {
+class _LecturerShellState extends State<LecturerShell> {
   int _index = 0;
 
   static const _tabs = [
-    (icon: Icons.school_outlined, label: 'Giảng viên'),
-    (icon: Icons.groups_outlined, label: 'Sinh viên / Nhóm đồ án'),
-    (icon: Icons.account_balance_outlined, label: 'Hội đồng'),
+    (icon: Icons.calendar_month_outlined, label: 'Lịch cá nhân'),
+    (icon: Icons.rate_review_outlined, label: 'Dự án review'),
   ];
 
   @override
@@ -33,7 +31,7 @@ class _ModeratorShellState extends State<ModeratorShell> {
     final isGuest = auth.isDemoGuest;
 
     return RoleGuard(
-      allowedRoles: const [AppRole.moderator, AppRole.admin],
+      allowedRole: AppRole.lecturer,
       child: Scaffold(
         appBar: AppBar(
           title: AnimatedSwitcher(
@@ -76,9 +74,8 @@ class _ModeratorShellState extends State<ModeratorShell> {
         body: AnimatedShellBody(
           index: _index,
           children: const [
-            LecturerCatalogScreen(),
-            StudentGroupCatalogScreen(),
-            BoardCatalogScreen(),
+            LecturerPersonalScheduleScreen(),
+            LecturerReviewProjectsScreen(),
           ],
         ),
         bottomNavigationBar: AnimatedBottomNavBar(

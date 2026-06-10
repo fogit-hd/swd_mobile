@@ -4,28 +4,30 @@ import '../../models/auth_models.dart';
 import '../../widgets/animated_shell_body.dart';
 import '../../widgets/role_guard.dart';
 import '../login_screen.dart';
-import '../review/review_sessions_screen.dart';
-import 'panel_schedule_screen.dart';
+import '../moderator/moderator_create_account_screen.dart';
+import 'admin_accounts_screen.dart';
+import 'admin_semester_screen.dart';
 
-class PanelShell extends StatefulWidget {
-  const PanelShell({super.key});
+class AdminShell extends StatefulWidget {
+  const AdminShell({super.key});
 
   @override
-  State<PanelShell> createState() => _PanelShellState();
+  State<AdminShell> createState() => _AdminShellState();
 }
 
-class _PanelShellState extends State<PanelShell> {
+class _AdminShellState extends State<AdminShell> {
   int _index = 0;
 
   static const _tabs = [
-    (icon: Icons.calendar_today_outlined, label: 'Lịch'),
-    (icon: Icons.rate_review_outlined, label: 'Review'),
+    (icon: Icons.people_outline, label: 'Tài khoản'),
+    (icon: Icons.school_outlined, label: 'Học kỳ'),
+    (icon: Icons.person_add_outlined, label: 'Tạo TK'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return RoleGuard(
-      allowedRole: AppRole.panel,
+      allowedRole: AppRole.admin,
       child: Scaffold(
         appBar: AppBar(
           title: AnimatedSwitcher(
@@ -46,16 +48,15 @@ class _PanelShellState extends State<PanelShell> {
         body: AnimatedShellBody(
           index: _index,
           children: const [
-            PanelScheduleScreen(),
-            ReviewSessionsScreen(
-              title: 'Phiên cần review',
-              subtitle: 'Nhập nhận xét theo checklist — không có điểm số',
-            ),
+            AdminAccountsScreen(),
+            AdminSemesterScreen(),
+            ModeratorCreateAccountScreen(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _index,
           onTap: (i) => setState(() => _index = i),
+          type: BottomNavigationBarType.fixed,
           items: List.generate(_tabs.length, (i) {
             final tab = _tabs[i];
             return BottomNavigationBarItem(

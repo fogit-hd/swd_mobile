@@ -50,7 +50,7 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
             if (widget.message != null) ...[
               const SizedBox(height: 16),
               Text(
-                widget.message!,
+                widget.message ?? '',
                 style: const TextStyle(color: AppTheme.mediumGray, fontSize: 14),
               ),
             ],

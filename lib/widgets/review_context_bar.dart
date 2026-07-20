@@ -1,34 +1,33 @@
 import 'package:flutter/material.dart';
 
 import '../app/auth_scope.dart';
-import '../models/review_enums.dart';
+import '../data/mock_sample_data.dart';
+import '../models/review_round.dart';
 import '../models/semester.dart';
 import '../services/api_client.dart';
+import '../services/review_service.dart';
 import '../services/semester_service.dart';
 import '../theme/app_theme.dart';
-import '../utils/week_utils.dart';
 
 class ReviewContext {
   const ReviewContext({
     required this.semester,
-    required this.reviewType,
-    required this.weekStart,
+    required this.round,
   });
 
   final Semester semester;
-  final ReviewType reviewType;
-  final String weekStart;
+  final ReviewRound round;
+
+  int get roundId => round.id;
 }
 
 class ReviewContextBar extends StatefulWidget {
   const ReviewContextBar({
     super.key,
     required this.onChanged,
-    this.allowWeekShift = true,
   });
 
   final ValueChanged<ReviewContext> onChanged;
-  final bool allowWeekShift;
 
   @override
   State<ReviewContextBar> createState() => ReviewContextBarState();
@@ -37,19 +36,38 @@ class ReviewContextBar extends StatefulWidget {
 class ReviewContextBarState extends State<ReviewContextBar> {
   List<Semester>? _semesters;
   Semester? _semester;
-  ReviewType _reviewType = ReviewType.defaultType;
-  String _weekStart = weekStartOf(DateTime.now());
+  List<ReviewRound>? _rounds;
+  ReviewRound? _round;
   bool _loading = true;
+  bool _loadingRounds = false;
+  bool _loadStarted = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_semesters == null) _loadSemesters();
+    if (_loadStarted) return;
+    _loadStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadSemesters();
+    });
   }
 
   Future<void> _loadSemesters() async {
     try {
       final auth = AuthScope.of(context);
+      if (auth.isDemoMode) {
+        final semesters = MockSampleData.semesters;
+        if (!mounted) return;
+        setState(() {
+          _semesters = semesters;
+          _semester = semesters.isNotEmpty ? semesters.first : null;
+          _rounds = const [];
+          _round = null;
+          _loading = false;
+        });
+        return;
+      }
+
       final semesters = await SemesterService(ApiClient(auth)).fetchSemesters();
       if (!mounted) return;
       Semester? active;
@@ -65,31 +83,56 @@ class ReviewContextBarState extends State<ReviewContextBar> {
         _semester = active;
         _loading = false;
       });
-      if (active != null) _notify();
+      if (active != null) {
+        await _loadRounds(active.id);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
     }
   }
 
-  void _notify() {
-    final semester = _semester;
-    if (semester == null) return;
-    widget.onChanged(
-      ReviewContext(
-        semester: semester,
-        reviewType: _reviewType,
-        weekStart: _weekStart,
-      ),
-    );
+  Future<void> _loadRounds(int semesterId) async {
+    setState(() {
+      _loadingRounds = true;
+      _rounds = null;
+      _round = null;
+    });
+
+    try {
+      final auth = AuthScope.of(context);
+      final rounds =
+          await ReviewService(ApiClient(auth)).fetchRounds(semesterId: semesterId);
+      if (!mounted) return;
+
+      // Open trước, rồi các đợt còn lại (Closed/Draft không cho lưu slot).
+      final ordered = [
+        ...rounds.where((r) => r.isOpen),
+        ...rounds.where((r) => !r.isOpen),
+      ];
+      final selected = ordered.isNotEmpty ? ordered.first : null;
+
+      setState(() {
+        _rounds = ordered;
+        _round = selected;
+        _loadingRounds = false;
+      });
+      if (selected != null) _notify();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _rounds = const [];
+        _round = null;
+        _loadingRounds = false;
+      });
+    }
   }
 
-  void _shiftWeek(int delta) {
-    final monday = mondayOfWeek(DateTime.parse(_weekStart));
-    setState(() {
-      _weekStart = weekStartOf(monday.add(Duration(days: 7 * delta)));
-    });
-    _notify();
+  void _notify() {
+    final semester = _semester;
+    final round = _round;
+    if (semester == null || round == null) return;
+    widget.onChanged(ReviewContext(semester: semester, round: round));
   }
 
   @override
@@ -98,12 +141,16 @@ class ReviewContextBarState extends State<ReviewContextBar> {
       return const LinearProgressIndicator(minHeight: 2);
     }
 
-    if (_semester == null || _semesters == null || _semesters!.isEmpty) {
+    final semesters = _semesters;
+    final semester = _semester;
+    if (semester == null || semesters == null || semesters.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(8),
         child: Text('Chưa có học kỳ. Admin cần tạo học kỳ trước.'),
       );
     }
+
+    final rounds = _rounds ?? const <ReviewRound>[];
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -113,12 +160,13 @@ class ReviewContextBarState extends State<ReviewContextBar> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<Semester>(
-              value: _semester,
+              key: ValueKey('semester-${semester.id}'),
+              initialValue: semester,
               decoration: const InputDecoration(
                 labelText: 'Học kỳ',
                 isDense: true,
               ),
-              items: _semesters!
+              items: semesters
                   .map(
                     (s) => DropdownMenuItem(
                       value: s,
@@ -129,55 +177,45 @@ class ReviewContextBarState extends State<ReviewContextBar> {
               onChanged: (value) {
                 if (value == null) return;
                 setState(() => _semester = value);
-                _notify();
+                _loadRounds(value.id);
               },
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<ReviewType>(
-              value: _reviewType,
-              decoration: const InputDecoration(
-                labelText: 'Loại review',
-                isDense: true,
-              ),
-              items: ReviewType.values
-                  .map(
-                    (t) => DropdownMenuItem(
-                      value: t,
-                      child: Text(t.label),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _reviewType = value);
-                _notify();
-              },
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (widget.allowWeekShift)
-                  IconButton(
-                    onPressed: () => _shiftWeek(-1),
-                    icon: const Icon(Icons.chevron_left),
-                  ),
-                Expanded(
-                  child: Text(
-                    'Tuần $_weekStart',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.darkGray,
-                    ),
-                  ),
+            if (_loadingRounds)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            else if (rounds.isEmpty)
+              const Text(
+                'Chưa có đợt review. Phòng đào tạo cần mở đợt trước.',
+                style: TextStyle(color: AppTheme.mediumGray, fontSize: 13),
+              )
+            else
+              DropdownButtonFormField<ReviewRound>(
+                key: ValueKey('round-${_round?.id ?? 0}'),
+                initialValue: _round,
+                decoration: const InputDecoration(
+                  labelText: 'Đợt review',
+                  isDense: true,
                 ),
-                if (widget.allowWeekShift)
-                  IconButton(
-                    onPressed: () => _shiftWeek(1),
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-              ],
-            ),
+                items: rounds
+                    .map(
+                      (r) => DropdownMenuItem(
+                        value: r,
+                        child: Text(
+                          '${r.displayName} · ${r.status ?? '—'}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _round = value);
+                  _notify();
+                },
+              ),
           ],
         ),
       ),

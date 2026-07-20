@@ -24,4 +24,11 @@ class Semester {
   final bool isActive;
 
   String get displayName => name ?? code ?? 'Học kỳ $id';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is Semester && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

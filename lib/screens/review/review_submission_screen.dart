@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/auth_scope.dart';
 import '../../models/review_enums.dart';
 import '../../models/review_submission.dart';
+import '../../services/ai_suggestion_service.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
@@ -27,6 +28,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   ReviewSubmission? _submission;
   bool _loading = true;
   bool _saving = false;
+  bool _aiLoading = false;
   String? _error;
 
   final _reviewerCommentController = TextEditingController();
@@ -99,19 +101,24 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
         submission.effortHours?.toString() ?? '';
 
     for (final item in submission.items) {
-      if (item.itemKey != null && !item.isSection) {
-        _itemCommentControllers[item.itemKey!] =
+      final key = item.itemKey;
+      if (key != null && !item.isSection) {
+        _itemCommentControllers[key] =
             TextEditingController(text: item.comment ?? '');
       }
     }
   }
 
   ReviewSubmission _buildDraft() {
-    final submission = _submission!;
+    final submission = _submission;
+    if (submission == null) {
+      throw StateError('Submission chưa được tải');
+    }
     final items = submission.items.map((item) {
-      if (item.isSection || item.itemKey == null) return item;
+      final key = item.itemKey;
+      if (item.isSection || key == null) return item;
       return item.copyWith(
-        comment: _itemCommentControllers[item.itemKey!]?.text.trim(),
+        comment: _itemCommentControllers[key]?.text.trim(),
       );
     }).toList();
 
@@ -172,10 +179,73 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   }
 
   void _setAnswer(int index, ReviewChecklistAnswer answer) {
-    final submission = _submission!;
+    final submission = _submission;
+    if (submission == null) return;
     final items = [...submission.items];
     items[index] = items[index].copyWith(answer: answer);
     setState(() => _submission = submission.copyWith(items: items));
+  }
+
+  /// Điền nhận xét / gợi ý từ POST /api/project-suggestions/summary.
+  Future<void> _applyAiSuggestion() async {
+    final submission = _submission;
+    if (submission == null || _aiLoading || _saving) return;
+
+    setState(() => _aiLoading = true);
+    try {
+      final auth = AuthScope.of(context);
+      final draft = _buildDraft();
+      final ai = await AiSuggestionService(ApiClient(auth)).generateFromSubmission(
+        draft,
+        fallbackProjectName: widget.sessionTitle,
+      );
+      if (!mounted) return;
+      if (ai == null || ai.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chưa nhận được gợi ý AI. Thử lại sau.'),
+          ),
+        );
+        return;
+      }
+
+      final commentParts = <String>[
+        if (ai.contentSummary.isNotEmpty) ai.contentSummary,
+        if (ai.strengthsSummary.isNotEmpty) 'Điểm mạnh: ${ai.strengthsSummary}',
+      ];
+      if (commentParts.isNotEmpty) {
+        _reviewerCommentController.text = commentParts.join('\n\n');
+      }
+      if (ai.improvementSummary.isNotEmpty) {
+        _suggestionController.text = ai.improvementSummary;
+      }
+      if (ai.strengthsSummary.isNotEmpty &&
+          _resultTextController.text.trim().isEmpty) {
+        _resultTextController.text = ai.strengthsSummary;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã điền gợi ý AI vào form')),
+      );
+    } on AiSuggestionException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is ApiException
+                ? ApiClient.localizeMessage(e.message)
+                : 'Không tạo được gợi ý AI. Thử lại sau.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _aiLoading = false);
+    }
   }
 
   @override
@@ -187,19 +257,29 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       );
     }
 
-    if (_error != null || _submission == null) {
+    final submission = _submission;
+    if (_error != null || submission == null) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.sessionTitle)),
         body: Center(child: Text(_error ?? 'Không tải được form review')),
       );
     }
 
-    final submission = _submission!;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Review ${widget.sessionTitle}'),
         actions: [
+          IconButton(
+            icon: _aiLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_awesome),
+            tooltip: 'Gợi ý AI',
+            onPressed: (_saving || _aiLoading) ? null : _applyAiSuggestion,
+          ),
           IconButton(
             icon: const Icon(Icons.download_outlined),
             tooltip: 'Export Excel',
@@ -302,11 +382,10 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                             item.label ?? item.itemKey ?? 'Tiêu chí',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          if (item.description != null &&
-                              item.description!.isNotEmpty) ...[
+                          if ((item.description ?? '').isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              item.description!,
+                              item.description ?? '',
                               style: const TextStyle(
                                 color: AppTheme.mediumGray,
                                 fontSize: 13,
@@ -340,6 +419,32 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                   );
                 }),
                 const Divider(height: 32),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Nhận xét tổng hợp',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed:
+                          (_saving || _aiLoading) ? null : _applyAiSuggestion,
+                      icon: _aiLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome, size: 18),
+                      label: Text(_aiLoading ? 'Đang tạo...' : 'AI gợi ý'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 _TextField(
                   label: 'Nhận xét chung',
                   controller: _reviewerCommentController,

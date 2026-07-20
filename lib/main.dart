@@ -4,5 +4,5 @@ import 'app/capstone_eval_app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(CapstoneEvalApp());
+  runApp(const CapstoneEvalApp());
 }

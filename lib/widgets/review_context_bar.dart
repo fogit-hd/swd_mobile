@@ -146,7 +146,7 @@ class ReviewContextBarState extends State<ReviewContextBar> {
     if (semester == null || semesters == null || semesters.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(8),
-        child: Text('Chưa có học kỳ. Admin cần tạo học kỳ trước.'),
+        child: Text('Chưa có học kỳ. Phòng đào tạo cần tạo học kỳ trước.'),
       );
     }
 
@@ -204,7 +204,7 @@ class ReviewContextBarState extends State<ReviewContextBar> {
                       (r) => DropdownMenuItem(
                         value: r,
                         child: Text(
-                          '${r.displayName} · ${r.status ?? '—'}',
+                          '${r.displayName} · ${r.statusLabel}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

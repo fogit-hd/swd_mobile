@@ -173,7 +173,12 @@ class ApiClient {
       case 'Gemini is not configured. Set Gemini:ApiKey before using project suggestions.':
         return 'Máy chủ chưa cấu hình Gemini cho gợi ý AI.';
       case 'Gemini is temporarily unavailable. Please try again later.':
-        return 'Dịch vụ AI tạm thời không khả dụng. Thử lại sau.';
+        return 'Gemini đang bận hoặc bị giới hạn tạm thời. '
+            'Nếu vừa test Swagger, đợi khoảng 1 phút rồi thử lại.';
+      case 'Gemini did not respond before the request timed out.':
+        return 'AI phản hồi quá lâu (timeout máy chủ). Thử lại sau ít phút.';
+      case 'Gemini could not be reached.':
+        return 'Không kết nối được tới Gemini. Kiểm tra mạng máy chủ hoặc thử lại.';
       case 'Gemini rejected the project suggestion request.':
         return 'Yêu cầu gợi ý AI bị từ chối. Kiểm tra nội dung gửi lên.';
       case 'Gemini could not generate a project suggestion.':

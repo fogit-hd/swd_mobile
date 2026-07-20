@@ -5,6 +5,7 @@ import '../../models/review_submission.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/checklist_labels.dart';
 import '../../widgets/app_loading.dart';
 
 class ReviewResultsScreen extends StatefulWidget {
@@ -57,7 +58,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
           .exportSubmissionXlsx(widget.submissionId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã tải export.xlsx (${bytes.length} bytes)')),
+        SnackBar(content: Text('Đã tải file Excel (${bytes.length} bytes)')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -112,7 +113,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Review chưa được gửi. Chỉ xem được sau khi đã nộp bài chấm.',
+                'Bài chấm chưa được gửi. Chỉ xem được sau khi đã nộp nhận xét.',
                 style: TextStyle(color: AppTheme.mediumGray),
               ),
             ),
@@ -122,7 +123,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
             return Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: Text(
-                item.label ?? 'Mục',
+                ChecklistLabels.localize(item.label ?? 'Mục'),
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppTheme.primary,
@@ -139,9 +140,21 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.label ?? item.itemKey ?? 'Tiêu chí',
+                    ChecklistLabels.localize(
+                      item.label ?? item.itemKey ?? 'Tiêu chí',
+                    ),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
+                  if ((item.description ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      ChecklistLabels.localize(item.description!),
+                      style: const TextStyle(
+                        color: AppTheme.mediumGray,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   Text('Trả lời: ${item.answer?.label ?? '—'}'),
                   if (item.comment != null && item.comment!.isNotEmpty)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import '../models/project_suggestion.dart';
@@ -13,10 +14,10 @@ class AiSuggestionService {
   static const int maxProjectNameLength = 200;
   static const int maxProjectContentLength = 20000;
 
+  /// Gemini trên Render thường mất 20–50s.
+  static const Duration _aiTimeout = Duration(seconds: 90);
+
   /// Gọi Gemini qua BE.
-  ///
-  /// Ném [AiSuggestionException] với message tiếng Việt khi BE/AI lỗi
-  /// (không để raw "An unexpected error occurred." lên UI).
   Future<ProjectSuggestion?> generateSummary({
     required String projectName,
     required String projectContent,
@@ -29,13 +30,22 @@ class AiSuggestionService {
       );
     }
 
-    final response = await _client.post(
-      '/api/project-suggestions/summary',
-      body: {
-        'projectName': _clip(name, maxProjectNameLength),
-        'projectContent': _clip(content, maxProjectContentLength),
-      },
-    );
+    late final response;
+    try {
+      response = await _client
+          .post(
+            '/api/project-suggestions/summary',
+            body: {
+              'projectName': _clip(name, maxProjectNameLength),
+              'projectContent': _clip(content, maxProjectContentLength),
+            },
+          )
+          .timeout(_aiTimeout);
+    } on TimeoutException {
+      throw const AiSuggestionException(
+        'AI phản hồi quá lâu (>90 giây). Đợi khoảng 1 phút rồi thử lại.',
+      );
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(response.body);
@@ -55,7 +65,9 @@ class AiSuggestionService {
       return suggestion;
     }
 
-    throw AiSuggestionException(_messageForFailure(response.statusCode, response.body));
+    throw AiSuggestionException(
+      _messageForFailure(response.statusCode, response.body),
+    );
   }
 
   /// Build request từ submission review (checklist + metadata).
@@ -83,7 +95,8 @@ class AiSuggestionService {
   /// Ghép nội dung checklist thành `projectContent` cho BE.
   static String buildProjectContent(ReviewSubmission submission) {
     final buf = StringBuffer();
-    if (submission.groupCode != null && submission.groupCode!.trim().isNotEmpty) {
+    if (submission.groupCode != null &&
+        submission.groupCode!.trim().isNotEmpty) {
       buf.writeln('Mã nhóm: ${submission.groupCode}');
     }
     if (submission.type != null && submission.type!.trim().isNotEmpty) {
@@ -152,13 +165,14 @@ class AiSuggestionService {
       case 403:
         return 'Chỉ tài khoản giảng viên mới dùng được AI gợi ý.';
       case 429:
-        return 'Bạn gọi AI quá nhanh. Đợi khoảng 1 phút rồi thử lại.';
+        return 'Bạn gọi AI quá nhanh (giới hạn ~5 lần/phút). Đợi 1 phút rồi thử lại.';
       case 502:
       case 503:
-        return 'Dịch vụ AI đang bận hoặc chưa cấu hình Gemini trên máy chủ.';
+        return 'Gemini đang bận hoặc bị giới hạn tạm thời. '
+            'Nếu vừa test Swagger, đợi khoảng 1 phút rồi thử lại trên app.';
       case 500:
       default:
-        return 'Máy chủ AI đang lỗi. Kiểm tra Gemini:ApiKey trên backend hoặc thử lại sau.';
+        return 'Máy chủ AI đang lỗi. Thử lại sau ít phút.';
     }
   }
 

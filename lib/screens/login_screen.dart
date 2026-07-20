@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               OutlinedButton.icon(
                                 onPressed: _loading ? null : _enterDemo,
                                 icon: const Icon(Icons.science_outlined),
-                                label: const Text('Vào chế độ Demo'),
+                                label: const Text('Vào chế độ demo'),
                               ),
                             ],
                           ),

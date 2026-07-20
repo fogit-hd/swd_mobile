@@ -11,6 +11,7 @@ import '../../services/defense_hub_client.dart';
 import '../../services/defense_service.dart';
 import '../../services/semester_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../widgets/app_loading.dart';
 
 class LecturerDefenseSessionsScreen extends StatefulWidget {
@@ -315,7 +316,9 @@ class _DefenseSessionDetailScreenState
     final value = await showDialog<double>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Điểm $scoreType — ${student.displayName}'),
+        title: Text(
+          'Điểm ${DisplayLabels.defenseScoreType(scoreType)} — ${student.displayName}',
+        ),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -362,7 +365,11 @@ class _DefenseSessionDetailScreenState
         _localScores[key] = submitted.scoreValue ?? value;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã gửi điểm $scoreType: $value')),
+        SnackBar(
+          content: Text(
+            'Đã gửi điểm ${DisplayLabels.defenseScoreType(scoreType)}: $value',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -378,7 +385,7 @@ class _DefenseSessionDetailScreenState
     final state = _state;
     if (state == null || state.startedAt == null || state.isLocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chỉ upload khi phiên đang diễn ra')),
+        const SnackBar(content: Text('Chỉ tải minh chứng khi phiên đang diễn ra')),
       );
       return;
     }
@@ -409,7 +416,7 @@ class _DefenseSessionDetailScreenState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, noteController.text),
-            child: const Text('Upload'),
+            child: const Text('Tải lên'),
           ),
         ],
       ),
@@ -431,7 +438,7 @@ class _DefenseSessionDetailScreenState
         _evidences = [evidence, ..._evidences];
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã upload minh chứng')),
+        const SnackBar(content: Text('Đã tải minh chứng')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -510,13 +517,13 @@ class _DefenseSessionDetailScreenState
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'BaoVe / Nguoi — điểm 0–10',
+                  'Bảo vệ / Cá nhân — điểm 0–10',
                   style: TextStyle(color: AppTheme.mediumGray, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 if (_members.isEmpty)
                   const Text(
-                    'Không tải được danh sách SV nhóm. Kiểm tra kỳ học / groupId.',
+                    'Không tải được danh sách sinh viên nhóm. Kiểm tra học kỳ / mã nhóm.',
                     style: TextStyle(color: AppTheme.mediumGray),
                   )
                 else
@@ -528,8 +535,8 @@ class _DefenseSessionDetailScreenState
                         title: Text(m.displayName),
                         subtitle: Text(
                           '${m.code ?? ''}'
-                          '${baoVe != null ? ' · BV $baoVe' : ''}'
-                          '${nguoi != null ? ' · Người $nguoi' : ''}',
+                          '${baoVe != null ? ' · Bảo vệ $baoVe' : ''}'
+                          '${nguoi != null ? ' · Cá nhân $nguoi' : ''}',
                         ),
                         trailing: canScore
                             ? PopupMenuButton<String>(
@@ -540,11 +547,11 @@ class _DefenseSessionDetailScreenState
                                 itemBuilder: (_) => const [
                                   PopupMenuItem(
                                     value: 'BaoVe',
-                                    child: Text('Chấm BaoVe'),
+                                    child: Text('Chấm bảo vệ'),
                                   ),
                                   PopupMenuItem(
                                     value: 'Nguoi',
-                                    child: Text('Chấm Nguoi'),
+                                    child: Text('Chấm cá nhân'),
                                   ),
                                 ],
                               )
@@ -568,7 +575,7 @@ class _DefenseSessionDetailScreenState
                       OutlinedButton.icon(
                         onPressed: _busy ? null : _uploadEvidence,
                         icon: const Icon(Icons.photo_camera_outlined, size: 18),
-                        label: const Text('Upload'),
+                        label: const Text('Tải lên'),
                       ),
                   ],
                 ),

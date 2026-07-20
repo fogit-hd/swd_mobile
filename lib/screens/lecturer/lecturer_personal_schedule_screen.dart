@@ -72,9 +72,9 @@ class _LecturerPersonalScheduleScreenState
         date: date ?? DateTime.now(),
         slot: s.slot,
         title: s.title,
-        subtitle: s.type,
+        subtitle: s.typeLabel,
         room: s.room,
-        type: 'Review',
+        type: 'Buổi review',
       );
   }
 
@@ -86,8 +86,8 @@ class _LecturerPersonalScheduleScreenState
         title: s.title,
         subtitle: s.councilCode,
         room: s.room,
-        type: 'Bảo vệ',
-      );
+        type: 'Buổi bảo vệ',
+    );
   }
 
   @override

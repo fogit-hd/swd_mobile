@@ -100,7 +100,7 @@ class DefenseService {
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       },
     );
-    _client.throwIfFailed(response, 'Upload minh chứng');
+    _client.throwIfFailed(response, 'Tải minh chứng');
 
     return DefenseEvidence.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,

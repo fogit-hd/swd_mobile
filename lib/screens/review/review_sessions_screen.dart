@@ -252,13 +252,14 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
               (s) => Card(
                 child: ListTile(
                   title: Text(
-                    '${s.reviewType ?? 'Review'} · Nhóm #${s.groupId}',
+                    '${s.reviewTypeLabel} · Nhóm #${s.groupId}',
                   ),
                   subtitle: Text(
                     [
-                      if (s.result != null) 'KQ: ${s.result}',
+                      if (s.result != null) 'Kết quả: ${s.result}',
                       if (s.score != null) 'Điểm: ${s.score}',
                       if (s.notes != null && s.notes!.isNotEmpty) s.notes!,
+                      'Trạng thái: ${s.statusLabel}',
                     ].join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

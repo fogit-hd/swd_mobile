@@ -622,7 +622,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
               ),
               const SizedBox(height: AppSpacing.xs),
               PulseGradientButton(
-                label: 'Kết thúc Review',
+                label: 'Kết thúc buổi review',
                 loading: _completing,
                 onPressed: _completeReview,
               ),

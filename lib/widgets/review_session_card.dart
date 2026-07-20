@@ -58,7 +58,7 @@ class ReviewSessionCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     if (session.type != null)
                       Text(
-                        session.type ?? '',
+                        session.typeLabel,
                         style: const TextStyle(
                           color: AppTheme.darkGray,
                           fontSize: 14,

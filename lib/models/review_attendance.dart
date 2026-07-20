@@ -1,3 +1,5 @@
+import '../utils/display_labels.dart';
+
 class ReviewAttendanceList {
   const ReviewAttendanceList({
     required this.sessionId,
@@ -41,6 +43,8 @@ class ReviewAttendanceList {
   final List<AttendanceStudent> students;
 
   bool get isGroupCompleted => groupStatus == 'Completed';
+
+  String get groupStatusLabel => DisplayLabels.groupStatus(groupStatus);
 }
 
 class AttendanceStudent {

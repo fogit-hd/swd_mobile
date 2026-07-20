@@ -82,7 +82,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu đăng ký slot trống')),
+        const SnackBar(content: Text('Đã lưu đăng ký ca trống')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -106,7 +106,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã gửi đăng ký slot cho phòng đào tạo')),
+        const SnackBar(content: Text('Đã gửi đăng ký ca cho phòng đào tạo')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -175,7 +175,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text('Lưu nháp (${_selectedSlots.length} slot)'),
+                : Text('Lưu nháp (${_selectedSlots.length} ca)'),
           ),
         ),
         const SizedBox(height: 12),

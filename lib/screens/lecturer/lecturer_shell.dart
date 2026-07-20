@@ -23,7 +23,7 @@ class _LecturerShellState extends State<LecturerShell> {
   static const _tabs = [
     (icon: Icons.calendar_month_outlined, label: 'Lịch chấm'),
     (icon: Icons.rate_review_outlined, label: 'Dự án review'),
-    (icon: Icons.grid_view_rounded, label: 'Đăng ký slot'),
+    (icon: Icons.grid_view_rounded, label: 'Đăng ký ca'),
     (icon: Icons.gavel_outlined, label: 'Bảo vệ'),
   ];
 
@@ -61,7 +61,7 @@ class _LecturerShellState extends State<LecturerShell> {
             const Padding(
               padding: EdgeInsets.only(right: 4),
               child: Chip(
-                label: Text('Demo', style: TextStyle(fontSize: 11)),
+                label: Text('Chế độ demo', style: TextStyle(fontSize: 11)),
                 visualDensity: VisualDensity.compact,
               ),
             ),

@@ -4,13 +4,13 @@ import '../../app/auth_scope.dart';
 import '../../data/mock_sample_data.dart';
 import '../../models/project_review_status.dart';
 import '../../models/published_schedule.dart';
-import '../../models/review_enums.dart';
 import '../../models/review_session.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_animations.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/week_utils.dart';
 import '../../widgets/ui/edu_card.dart';
 import '../../widgets/ui/shimmer_loading.dart';
@@ -133,13 +133,7 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
         _ => ProjectReviewStatus.notStarted,
       };
 
-  String _reviewTypeLabel(String? type) {
-    if (type == null || type.isEmpty) return 'Review';
-    for (final value in ReviewType.values) {
-      if (value.apiValue == type) return value.label;
-    }
-    return type;
-  }
+  String _reviewTypeLabel(String? type) => DisplayLabels.reviewType(type);
 
   void _openGroup(LecturerReviewGroup group) {
     final sessionId = group.sessionId;

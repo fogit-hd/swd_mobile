@@ -1,3 +1,5 @@
+import '../utils/display_labels.dart';
+
 class ReviewSession {
   const ReviewSession({
     required this.sessionId,
@@ -60,6 +62,8 @@ class ReviewSession {
 
   String get title => groupCode ?? code ?? 'Phiên review #$sessionId';
 
+  String get typeLabel => DisplayLabels.reviewType(type);
+
   String get timeLabel {
     final date = sessionDate;
     if (date == null) {
@@ -70,10 +74,8 @@ class ReviewSession {
     return slot != null ? '$time • Ca $slot' : time;
   }
 
-  String get statusLabel {
-    if (isSubmitted) return 'Đã gửi';
-    if (submissionStatus == 'Draft') return 'Đang soạn';
-    if (isPublished) return 'Đã công bố';
-    return sessionStatus ?? '—';
-  }
+  String get statusLabel => DisplayLabels.reviewWorkflowStatus(
+        submissionStatus: submissionStatus,
+        sessionStatus: sessionStatus,
+      );
 }

@@ -116,7 +116,7 @@ class _LecturerSlotRegistrationScreenState
     if (AuthScope.of(context).isDemoMode) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('[Demo] Đã lưu đăng ký slot')),
+        const SnackBar(content: Text('[Chế độ demo] Đã lưu đăng ký ca')),
       );
       return;
     }
@@ -128,8 +128,8 @@ class _LecturerSlotRegistrationScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Đợt "${ctx.round.displayName}" đang ${ctx.round.status ?? 'không Open'}. '
-            'Chỉ đăng ký được khi đợt ở trạng thái Open.',
+            'Đợt "${ctx.round.displayName}" đang ${ctx.round.statusLabel}. '
+            'Chỉ đăng ký được khi đợt đang mở.',
           ),
           backgroundColor: AppTheme.error,
         ),
@@ -145,7 +145,7 @@ class _LecturerSlotRegistrationScreenState
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu đăng ký slot')),
+        const SnackBar(content: Text('Đã lưu đăng ký ca')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -301,8 +301,8 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                 children: [
                   Text(
                     widget.mode == SlotRegistrationMode.lecturer
-                        ? 'Đăng ký slot trống'
-                        : 'Đăng ký slot review nhóm',
+                        ? 'Đăng ký ca trống'
+                        : 'Đăng ký ca review nhóm',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -314,7 +314,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                   Text(
                     widget.mode == SlotRegistrationMode.lecturer
                         ? 'Chọn khung giờ bạn có thể đi chấm'
-                        : 'Trưởng nhóm chọn 1 slot (tối đa 3 nhóm/slot)',
+                        : 'Trưởng nhóm chọn 1 ca (tối đa 3 nhóm/ca)',
                     style: const TextStyle(
                       color: AppTheme.mediumGray,
                       fontSize: 14,
@@ -336,7 +336,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
               bottom: 0,
               child: StickyActionButton(
                 label: widget.mode == SlotRegistrationMode.lecturer
-                    ? 'Lưu đăng ký (${_selected.length} slot)'
+                    ? 'Lưu đăng ký (${_selected.length} ca)'
                     : 'Xác nhận đăng ký',
                 loading: saving,
                 icon: Icons.save_outlined,

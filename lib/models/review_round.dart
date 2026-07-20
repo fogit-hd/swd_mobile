@@ -1,4 +1,5 @@
 import 'review_enums.dart';
+import '../utils/display_labels.dart';
 
 class ReviewRound {
   const ReviewRound({
@@ -43,17 +44,13 @@ class ReviewRound {
 
   bool get isOpen => status == 'Open';
 
-  ReviewType? get reviewType {
-    final raw = type;
-    if (raw == null) return null;
-    for (final value in ReviewType.values) {
-      if (value.apiValue == raw) return value;
-    }
-    return null;
-  }
+  ReviewType? get reviewType => ReviewType.tryParse(type);
+
+  String get statusLabel => DisplayLabels.roundStatus(status);
+
+  String get typeLabel => DisplayLabels.reviewType(type);
 
   String get displayName {
-    final typeLabel = reviewType?.label ?? type ?? 'Review';
     final week = weekStartDate ?? '—';
     return '$typeLabel · tuần $week';
   }

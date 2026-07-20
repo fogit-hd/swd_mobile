@@ -7,6 +7,7 @@ import '../../services/ai_suggestion_service.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/checklist_labels.dart';
 import '../../widgets/app_loading.dart';
 
 class ReviewSubmissionScreen extends StatefulWidget {
@@ -29,6 +30,8 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _aiLoading = false;
+  bool _commentExpanded = true;
+  bool _suggestionExpanded = true;
   String? _error;
 
   final _reviewerCommentController = TextEditingController();
@@ -224,6 +227,10 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
         _resultTextController.text = ai.strengthsSummary;
       }
 
+      setState(() {
+        _commentExpanded = true;
+        _suggestionExpanded = true;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã điền gợi ý AI vào form')),
       );
@@ -253,7 +260,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.sessionTitle)),
-        body: const AppLoadingIndicator(message: 'Đang tải checklist...'),
+        body: const AppLoadingIndicator(message: 'Đang tải tiêu chí chấm...'),
       );
     }
 
@@ -267,7 +274,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Review ${widget.sessionTitle}'),
+        title: Text('Chấm review · ${widget.sessionTitle}'),
         actions: [
           IconButton(
             icon: _aiLoading
@@ -282,7 +289,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'Export Excel',
+            tooltip: 'Xuất Excel',
             onPressed: _saving
                 ? null
                 : () async {
@@ -294,7 +301,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Đã tải export.xlsx (${bytes.length} bytes)',
+                            'Đã tải file Excel (${bytes.length} bytes)',
                           ),
                         ),
                       );
@@ -326,7 +333,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Nhập nhận xét theo checklist. Không có điểm số hay PASS/FAIL.',
+                  'Nhập nhận xét theo danh sách tiêu chí. Không chấm điểm số hay đạt/không đạt.',
                   style: TextStyle(color: AppTheme.mediumGray, fontSize: 13),
                 ),
                 const Divider(height: 32),
@@ -339,13 +346,13 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                   controller: _workSizeController,
                 ),
                 _TextField(
-                  label: 'Effort (giờ)',
+                  label: 'Thời gian thực hiện (giờ)',
                   controller: _effortController,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Checklist',
+                  'Danh sách tiêu chí',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
@@ -356,7 +363,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(top: 8, bottom: 12),
                       child: Text(
-                        item.label ?? item.itemKey ?? 'Mục',
+                        ChecklistLabels.localize(
+                          item.label ?? item.itemKey ?? 'Mục',
+                        ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -379,13 +388,15 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.label ?? item.itemKey ?? 'Tiêu chí',
+                            ChecklistLabels.localize(
+                              item.label ?? item.itemKey ?? 'Tiêu chí',
+                            ),
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           if ((item.description ?? '').isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              item.description ?? '',
+                              ChecklistLabels.localize(item.description ?? ''),
                               style: const TextStyle(
                                 color: AppTheme.mediumGray,
                                 fontSize: 13,
@@ -419,11 +430,12 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                   );
                 }),
                 const Divider(height: 32),
+                // ── Phần AI gợi ý ──────────────────────────────────────
                 Row(
                   children: [
                     const Expanded(
                       child: Text(
-                        'Nhận xét tổng hợp',
+                        'Gợi ý từ AI',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -444,21 +456,69 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _TextField(
-                  label: 'Nhận xét chung',
-                  controller: _reviewerCommentController,
-                  maxLines: 4,
+                const SizedBox(height: 4),
+                const Text(
+                  'Nội dung AI điền vào đây — có thể chỉnh trước khi gửi.',
+                  style: TextStyle(color: AppTheme.mediumGray, fontSize: 12),
                 ),
-                _TextField(
-                  label: 'Gợi ý cải thiện',
-                  controller: _suggestionController,
-                  maxLines: 3,
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.statusActiveBg.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _AiSuggestionFrame(
+                        title: 'Nhận xét chung',
+                        controller: _reviewerCommentController,
+                        expanded: _commentExpanded,
+                        loading: _aiLoading,
+                        emptyHint:
+                            'Chưa có gợi ý. Nhấn «AI gợi ý» để tạo nhận xét.',
+                        onToggleExpand: () => setState(
+                          () => _commentExpanded = !_commentExpanded,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _AiSuggestionFrame(
+                        title: 'Gợi ý cải thiện',
+                        controller: _suggestionController,
+                        expanded: _suggestionExpanded,
+                        loading: _aiLoading,
+                        emptyHint:
+                            'Chưa có gợi ý. Nhấn «AI gợi ý» để tạo hướng cải thiện.',
+                        onToggleExpand: () => setState(
+                          () => _suggestionExpanded = !_suggestionExpanded,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 20),
+                // ── Phần giảng viên nhập ───────────────────────────────
+                const Text(
+                  'Nhập của giảng viên',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Phần bạn tự ghi nhận kết quả / kết luận buổi review.',
+                  style: TextStyle(color: AppTheme.mediumGray, fontSize: 12),
+                ),
+                const SizedBox(height: 10),
                 _TextField(
                   label: 'Kết quả (nhập tay nếu cần)',
                   controller: _resultTextController,
-                  maxLines: 2,
+                  maxLines: 4,
                 ),
               ],
             ),
@@ -488,7 +548,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Gửi review'),
+                          : const Text('Gửi bài chấm'),
                     ),
                   ),
                 ],
@@ -523,6 +583,151 @@ class _TextField extends StatelessWidget {
         maxLines: maxLines,
         keyboardType: keyboardType,
         decoration: InputDecoration(labelText: label),
+      ),
+    );
+  }
+}
+
+/// Khung AI: cùng layout khi trống / đang tạo / đã có kết quả.
+/// Mỗi khung có nút thu gọn / mở rộng riêng.
+class _AiSuggestionFrame extends StatelessWidget {
+  const _AiSuggestionFrame({
+    required this.title,
+    required this.controller,
+    required this.expanded,
+    required this.loading,
+    required this.emptyHint,
+    required this.onToggleExpand,
+  });
+
+  final String title;
+  final TextEditingController controller;
+  final bool expanded;
+  final bool loading;
+  final String emptyHint;
+  final VoidCallback onToggleExpand;
+
+  static const int _collapsedLines = 3;
+  static const int _emptyMinLines = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final hasText = value.text.trim().isNotEmpty;
+
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.lightGray),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ),
+                    if (hasText || loading)
+                      TextButton.icon(
+                        onPressed: loading ? null : onToggleExpand,
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        icon: Icon(
+                          expanded ? Icons.unfold_less : Icons.unfold_more,
+                          size: 18,
+                        ),
+                        label: Text(
+                          expanded ? 'Thu gọn' : 'Mở rộng',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  child: loading && !hasText
+                      ? const _LoadingPlaceholder(minLines: _emptyMinLines)
+                      : TextField(
+                          controller: controller,
+                          minLines: expanded
+                              ? (hasText ? _collapsedLines : _emptyMinLines)
+                              : _collapsedLines,
+                          maxLines: expanded ? null : _collapsedLines,
+                          keyboardType: TextInputType.multiline,
+                          textAlignVertical: TextAlignVertical.top,
+                          decoration: InputDecoration(
+                            hintText: emptyHint,
+                            hintMaxLines: 3,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LoadingPlaceholder extends StatelessWidget {
+  const _LoadingPlaceholder({required this.minLines});
+
+  final int minLines;
+
+  @override
+  Widget build(BuildContext context) {
+    // Giữ chiều cao tương đương khung khi đã có kết quả (đồng bộ layout).
+    return SizedBox(
+      height: 20.0 * minLines,
+      child: const Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Đang tạo gợi ý AI...',
+                style: TextStyle(
+                  color: AppTheme.mediumGray,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

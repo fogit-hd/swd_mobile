@@ -1,3 +1,5 @@
+import '../utils/display_labels.dart';
+
 /// Bản tóm tắt từ GET /api/review-submissions/my (lecturer).
 class ReviewSubmissionSummary {
   const ReviewSubmissionSummary({
@@ -39,4 +41,8 @@ class ReviewSubmissionSummary {
   final DateTime? submittedAt;
 
   bool get isSubmitted => status == 'Submitted';
+
+  String get reviewTypeLabel => DisplayLabels.reviewType(reviewType);
+
+  String get statusLabel => DisplayLabels.submissionStatus(status);
 }

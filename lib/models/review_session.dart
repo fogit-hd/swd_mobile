@@ -5,7 +5,9 @@ class ReviewSession {
     this.code,
     this.type,
     this.sessionStatus,
+    this.groupId,
     this.groupCode,
+    this.topicName,
     this.sessionDate,
     this.slot,
     this.room,
@@ -20,7 +22,9 @@ class ReviewSession {
       code: json['code'] as String?,
       type: json['type'] as String?,
       sessionStatus: json['sessionStatus'] as String?,
+      groupId: json['groupId'] as int?,
       groupCode: json['groupCode'] as String?,
+      topicName: json['topicName'] as String?,
       sessionDate: json['sessionDate'] != null
           ? DateTime.tryParse(json['sessionDate'] as String)
           : null,
@@ -38,25 +42,29 @@ class ReviewSession {
   final String? code;
   final String? type;
   final String? sessionStatus;
+  final int? groupId;
   final String? groupCode;
+  final String? topicName;
   final DateTime? sessionDate;
   final int? slot;
   final String? room;
   final String? submissionStatus;
   final DateTime? lastSavedAt;
 
-  bool get isPublished => sessionStatus == 'Published';
-  bool get isSubmitted => submissionStatus == 'Submitted';
+  bool get isPublished =>
+      sessionStatus?.toLowerCase() == 'published';
+  bool get isSubmitted =>
+      submissionStatus?.toLowerCase() == 'submitted';
   bool get canEditReview => isPublished && !isSubmitted && submissionId > 0;
   bool get canViewResults => isSubmitted && submissionId > 0;
 
   String get title => groupCode ?? code ?? 'Phiên review #$sessionId';
 
   String get timeLabel {
-    if (sessionDate == null) {
+    final date = sessionDate;
+    if (date == null) {
       return slot != null ? 'Ca $slot' : '—';
     }
-    final date = sessionDate!;
     final time =
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     return slot != null ? '$time • Ca $slot' : time;

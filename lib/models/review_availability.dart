@@ -28,30 +28,38 @@ class AvailabilitySlot {
 
 class ReviewAvailabilityWeek {
   const ReviewAvailabilityWeek({
+    required this.roundId,
     required this.semesterId,
     required this.lecturerId,
     required this.weekStart,
+    this.isSubmitted = false,
+    this.submittedAt,
     this.slots = const [],
   });
 
   factory ReviewAvailabilityWeek.fromJson(Map<String, dynamic> json) {
     final slotsJson = json['slots'] as List<dynamic>? ?? [];
+    final weekStartRaw = json['weekStart'];
     return ReviewAvailabilityWeek(
+      roundId: json['roundId'] as int? ?? 0,
       semesterId: json['semesterId'] as int? ?? 0,
       lecturerId: json['lecturerId'] as int? ?? 0,
-      weekStart: json['weekStart'] as String? ?? '',
+      weekStart: weekStartRaw?.toString() ?? '',
+      isSubmitted: json['isSubmitted'] as bool? ?? false,
+      submittedAt: json['submittedAt'] != null
+          ? DateTime.tryParse(json['submittedAt'].toString())
+          : null,
       slots: slotsJson
           .map((e) => AvailabilitySlot.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
 
+  final int roundId;
   final int semesterId;
   final int lecturerId;
   final String weekStart;
+  final bool isSubmitted;
+  final DateTime? submittedAt;
   final List<AvailabilitySlot> slots;
-
-  Map<String, dynamic> toSaveJson() => {
-        'slots': slots.map((s) => s.toJson()).toList(),
-      };
 }

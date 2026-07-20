@@ -10,12 +10,14 @@ class ReviewSessionCard extends StatelessWidget {
     this.onTap,
     this.highlight = false,
     this.trailing,
+    this.subtitleExtra,
   });
 
   final ReviewSession session;
   final VoidCallback? onTap;
   final bool highlight;
   final Widget? trailing;
+  final String? subtitleExtra;
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +58,23 @@ class ReviewSessionCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     if (session.type != null)
                       Text(
-                        session.type!,
+                        session.type ?? '',
                         style: const TextStyle(
                           color: AppTheme.darkGray,
                           fontSize: 14,
                         ),
                       ),
+                    if (subtitleExtra != null && subtitleExtra!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitleExtra!,
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     Row(
                       children: [

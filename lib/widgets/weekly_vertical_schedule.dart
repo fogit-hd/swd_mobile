@@ -3,12 +3,23 @@ import 'package:flutter/material.dart';
 import '../theme/app_animations.dart';
 import '../theme/app_theme.dart';
 import '../utils/week_utils.dart';
+import '../models/schedule_event.dart';
 import 'scale_tap.dart';
 
-/// Lịch tuần dọc: dãy chọn ngày phía trên + bảng 2 cột (ngày | slot).
-/// Chưa gắn API — slot để trống.
+/// Lịch tuần dọc: dãy chọn ngày phía trên + bảng 2 cột (ngày | sự kiện).
 class WeeklyVerticalSchedule extends StatefulWidget {
-  const WeeklyVerticalSchedule({super.key});
+  const WeeklyVerticalSchedule({
+    super.key,
+    this.events = const [],
+    this.loading = false,
+    this.emptyMessage = 'Không có lịch trong tuần này.',
+    this.onRefresh,
+  });
+
+  final List<ScheduleEvent> events;
+  final bool loading;
+  final String emptyMessage;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<WeeklyVerticalSchedule> createState() => _WeeklyVerticalScheduleState();
@@ -41,13 +52,21 @@ class _WeeklyVerticalScheduleState extends State<WeeklyVerticalSchedule> {
         (i) => _weekMonday.add(Duration(days: i)),
       );
 
+  List<ScheduleEvent> _eventsForDay(DateTime day) {
+    return widget.events.where((e) {
+      return e.date.year == day.year &&
+          e.date.month == day.month &&
+          e.date.day == day.day;
+    }).toList()
+      ..sort((a, b) => (a.slot ?? 0).compareTo(b.slot ?? 0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final weekEnd = _weekMonday.add(const Duration(days: 6));
-    final monthLabel =
-        '${_weekMonday.month}/${_weekMonday.year}';
+    final monthLabel = '${_weekMonday.month}/${_weekMonday.year}';
 
-    return ListView(
+    final body = ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         Padding(
@@ -71,6 +90,7 @@ class _WeeklyVerticalScheduleState extends State<WeeklyVerticalSchedule> {
             itemBuilder: (context, index) {
               final day = _weekDays[index];
               final selected = index == _selectedDayIndex;
+              final hasEvents = _eventsForDay(day).isNotEmpty;
               return ScaleTap(
                 scale: 0.94,
                 onTap: () => setState(() => _selectedDayIndex = index),
@@ -102,7 +122,8 @@ class _WeeklyVerticalScheduleState extends State<WeeklyVerticalSchedule> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: selected ? AppTheme.white : AppTheme.mediumGray,
+                          color:
+                              selected ? AppTheme.white : AppTheme.mediumGray,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -114,6 +135,16 @@ class _WeeklyVerticalScheduleState extends State<WeeklyVerticalSchedule> {
                           color: selected ? AppTheme.white : AppTheme.black,
                         ),
                       ),
+                      if (hasEvents)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: selected ? AppTheme.white : AppTheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -122,26 +153,40 @@ class _WeeklyVerticalScheduleState extends State<WeeklyVerticalSchedule> {
           ),
         ),
         const SizedBox(height: 20),
-        Center(
-          child: FractionallySizedBox(
-            widthFactor: 0.9,
-            child: Column(
-              children: List.generate(7, (index) {
-                final day = _weekDays[index];
-                final highlighted = index == _selectedDayIndex;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ScheduleRow(
-                    day: day,
-                    highlighted: highlighted,
-                  ),
-                );
-              }),
+        if (widget.loading)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          Center(
+            child: FractionallySizedBox(
+              widthFactor: 0.9,
+              child: Column(
+                children: List.generate(7, (index) {
+                  final day = _weekDays[index];
+                  final highlighted = index == _selectedDayIndex;
+                  final dayEvents = _eventsForDay(day);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _ScheduleRow(
+                      day: day,
+                      highlighted: highlighted,
+                      events: dayEvents,
+                      emptyMessage: widget.emptyMessage,
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
-        ),
       ],
     );
+
+    if (widget.onRefresh != null) {
+      return RefreshIndicator(onRefresh: widget.onRefresh ?? () async {}, child: body);
+    }
+    return body;
   }
 }
 
@@ -200,10 +245,14 @@ class _ScheduleRow extends StatelessWidget {
   const _ScheduleRow({
     required this.day,
     required this.highlighted,
+    required this.events,
+    required this.emptyMessage,
   });
 
   final DateTime day;
   final bool highlighted;
+  final List<ScheduleEvent> events;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +313,50 @@ class _ScheduleRow extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 64),
                 padding: const EdgeInsets.all(12),
                 alignment: Alignment.centerLeft,
-                child: const SizedBox.shrink(),
+                child: events.isEmpty
+                    ? Text(
+                        emptyMessage,
+                        style: const TextStyle(
+                          color: AppTheme.mediumGray,
+                          fontSize: 12,
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: events.map((e) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                if (e.subtitle != null)
+                                  Text(
+                                    e.subtitle ?? '',
+                                    style: const TextStyle(
+                                      color: AppTheme.mediumGray,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                if (e.detail.isNotEmpty)
+                                  Text(
+                                    e.detail,
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
               ),
             ),
           ],

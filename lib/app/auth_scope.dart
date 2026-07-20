@@ -12,7 +12,11 @@ class AuthScope extends InheritedNotifier<AuthService> {
   static AuthService of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AuthScope>();
     assert(scope != null, 'AuthScope not found');
-    return scope!.notifier!;
+    final auth = scope?.notifier;
+    if (auth == null) {
+      throw FlutterError('AuthScope notifier is null');
+    }
+    return auth;
   }
 }
 

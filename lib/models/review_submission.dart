@@ -145,7 +145,8 @@ class ReviewSubmission {
   final DateTime? submittedAt;
   final List<ReviewSubmissionItem> items;
 
-  bool get isSubmitted => status == 'Submitted';
+  bool get isSubmitted =>
+      status?.toLowerCase() == 'submitted' || submittedAt != null;
 
   ReviewSubmission copyWith({
     String? workProductVersion,

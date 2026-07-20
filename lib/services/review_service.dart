@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import '../models/create_review_session.dart';
 import '../models/review_availability.dart';
 import '../models/review_enums.dart';
-import '../models/review_scheduling.dart';
+import '../models/review_round.dart';
 import '../models/review_session.dart';
 import '../models/review_submission.dart';
+import '../models/review_submission_summary.dart';
 import 'api_client.dart';
 
 class ReviewService {
@@ -23,16 +23,37 @@ class ReviewService {
         .toList();
   }
 
+  /// Danh sách submission của giảng viên (kết quả / điểm / ghi chú tóm tắt).
+  Future<List<ReviewSubmissionSummary>> fetchMySubmissions() async {
+    final response = await _client.get('/api/review-submissions/my');
+    _client.throwIfFailed(response, 'Tải danh sách review đã chấm');
+
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list
+        .map((e) => ReviewSubmissionSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Đợt review theo học kỳ — GV dùng để đăng ký availability (roundId).
+  Future<List<ReviewRound>> fetchRounds({required int semesterId}) async {
+    final response = await _client.get(
+      '/api/review-scheduling/rounds',
+      query: {'semesterId': semesterId.toString()},
+    );
+    _client.throwIfFailed(response, 'Tải đợt review');
+
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list
+        .map((e) => ReviewRound.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<ReviewAvailabilityWeek> fetchAvailabilityWeek({
-    required int semesterId,
-    required String weekStart,
+    required int roundId,
   }) async {
     final response = await _client.get(
       '/api/review-availability/week',
-      query: {
-        'semesterId': semesterId.toString(),
-        'weekStart': weekStart,
-      },
+      query: {'roundId': roundId.toString()},
     );
     _client.throwIfFailed(response, 'Tải đăng ký slot');
 
@@ -41,88 +62,32 @@ class ReviewService {
     );
   }
 
-  Future<ReviewAvailabilityWeek> saveAvailabilityWeek({
-    required int semesterId,
-    required String weekStart,
-    required List<AvailabilitySlot> slots,
+  Future<ReviewAvailabilityWeek> submitAvailabilityWeek({
+    required int roundId,
   }) async {
-    final response = await _client.put(
-      '/api/review-availability/week',
-      query: {
-        'semesterId': semesterId.toString(),
-        'weekStart': weekStart,
-      },
-      body: {'slots': slots.map((s) => s.toJson()).toList()},
+    final response = await _client.post(
+      '/api/review-availability/week/submit',
+      query: {'roundId': roundId.toString()},
     );
-    _client.throwIfFailed(response, 'Lưu đăng ký slot');
+    _client.throwIfFailed(response, 'Gửi đăng ký slot');
 
     return ReviewAvailabilityWeek.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
   }
 
-  Future<ReviewSchedulingBoard> fetchSchedulingBoard({
-    required int semesterId,
-    required String reviewType,
-    required String weekStart,
+  Future<ReviewAvailabilityWeek> saveAvailabilityWeek({
+    required int roundId,
+    required List<AvailabilitySlot> slots,
   }) async {
-    final response = await _client.get(
-      '/api/review-scheduling/board',
-      query: {
-        'semesterId': semesterId.toString(),
-        'reviewType': reviewType,
-        'weekStart': weekStart,
-      },
+    final response = await _client.put(
+      '/api/review-availability/week',
+      query: {'roundId': roundId.toString()},
+      body: {'slots': slots.map((s) => s.toJson()).toList()},
     );
-    _client.throwIfFailed(response, 'Tải bảng xếp lịch');
+    _client.throwIfFailed(response, 'Lưu đăng ký slot');
 
-    return ReviewSchedulingBoard.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
-  }
-
-  Future<ReviewSessionResponse> createSession(
-    CreateReviewSessionRequest request,
-  ) async {
-    final response = await _client.post(
-      '/api/review-sessions',
-      body: request.toJson(),
-    );
-    _client.throwIfFailed(response, 'Tạo phiên review');
-
-    return ReviewSessionResponse.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
-  }
-
-  Future<void> bulkAssignSessions(List<SchedulingSession> sessions) async {
-    final response = await _client.post(
-      '/api/review-sessions/bulk-assign',
-      body: {
-        'sessions': sessions.map((s) => s.toBulkAssignJson()).toList(),
-      },
-    );
-    _client.throwIfFailed(response, 'Lưu xếp lịch');
-  }
-
-  Future<void> updateSession(SchedulingSession session) async {
-    final response = await _client.patch(
-      '/api/review-sessions/${session.id}',
-      body: session.toUpdateJson(),
-    );
-    _client.throwIfFailed(response, 'Cập nhật phiên review');
-  }
-
-  Future<ReviewSchedulePublishResult> publishSchedule(
-    PublishReviewScheduleRequest request,
-  ) async {
-    final response = await _client.post(
-      '/api/review-schedules/publish',
-      body: request.toJson(),
-    );
-    _client.throwIfFailed(response, 'Công bố lịch');
-
-    return ReviewSchedulePublishResult.fromJson(
+    return ReviewAvailabilityWeek.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
   }
@@ -164,18 +129,6 @@ class ReviewService {
 
   Future<List<int>> exportSubmissionXlsx(int submissionId) =>
       _client.download('/api/review-submissions/$submissionId/export.xlsx');
-
-  Future<List<int>> exportSubmissionsZip({
-    required int semesterId,
-    required String reviewType,
-  }) =>
-      _client.download(
-        '/api/review-submissions/export.zip',
-        query: {
-          'semesterId': semesterId.toString(),
-          'reviewType': reviewType,
-        },
-      );
 
   static String defaultReviewType() => ReviewType.defaultType.apiValue;
 }

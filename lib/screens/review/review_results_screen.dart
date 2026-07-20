@@ -75,7 +75,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'Export Excel',
+            tooltip: 'Xuất Excel',
             onPressed: _exportXlsx,
           ),
         ],
@@ -89,11 +89,10 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
       return const AppLoadingIndicator(message: 'Đang tải kết quả...');
     }
 
-    if (_error != null || _submission == null) {
+    final submission = _submission;
+    if (_error != null || submission == null) {
       return Center(child: Text(_error ?? 'Không tải được kết quả'));
     }
-
-    final submission = _submission!;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -104,7 +103,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Reviewer: ${submission.reviewerName ?? submission.reviewerCode ?? '—'}',
+          'Người chấm: ${submission.reviewerName ?? submission.reviewerCode ?? '—'}',
           style: const TextStyle(color: AppTheme.mediumGray),
         ),
         const SizedBox(height: 16),
@@ -113,7 +112,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Review chưa được gửi. Chỉ xem được sau khi giảng viên submit.',
+                'Review chưa được gửi. Chỉ xem được sau khi đã nộp bài chấm.',
                 style: TextStyle(color: AppTheme.mediumGray),
               ),
             ),

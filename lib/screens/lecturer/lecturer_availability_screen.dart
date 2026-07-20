@@ -22,6 +22,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
   Set<AvailabilitySlot> _selectedSlots = {};
   bool _loading = false;
   bool _saving = false;
+  bool _submitting = false;
   String? _error;
 
   Future<void> _load() async {
@@ -36,8 +37,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
     try {
       final auth = AuthScope.of(context);
       final week = await ReviewService(ApiClient(auth)).fetchAvailabilityWeek(
-        semesterId: ctx.semester.id,
-        weekStart: ctx.weekStart,
+        roundId: ctx.roundId,
       );
       if (!mounted) return;
       setState(() {
@@ -77,8 +77,7 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
     try {
       final auth = AuthScope.of(context);
       await ReviewService(ApiClient(auth)).saveAvailabilityWeek(
-        semesterId: ctx.semester.id,
-        weekStart: ctx.weekStart,
+        roundId: ctx.roundId,
         slots: _selectedSlots.toList(),
       );
       if (!mounted) return;
@@ -95,6 +94,30 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
     }
   }
 
+  Future<void> _submit() async {
+    final ctx = _context;
+    if (ctx == null) return;
+
+    setState(() => _submitting = true);
+    try {
+      final auth = AuthScope.of(context);
+      await ReviewService(ApiClient(auth)).submitAvailabilityWeek(
+        roundId: ctx.roundId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã gửi đăng ký slot cho phòng đào tạo')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.error),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -108,17 +131,18 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
 
   Widget _buildBody() {
     if (_context == null || (_loading && _selectedSlots.isEmpty && _error == null)) {
-      return const AppLoadingIndicator(message: 'Đang tải tuần...');
+      return const AppLoadingIndicator(message: 'Đang tải đợt review...');
     }
 
     if (_error != null) {
+      final error = _error ?? 'Đã xảy ra lỗi';
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, textAlign: TextAlign.center),
+              Text(error, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
             ],
@@ -130,33 +154,42 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Đăng ký slot trống',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'PUT /api/review-availability/week',
-          style: TextStyle(color: AppTheme.mediumGray, fontSize: 13),
+        Text(
+          'Đăng ký slot · ${_context!.round.displayName}',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 16),
         WeekSlotGrid(
           selectedSlots: _selectedSlots,
           onToggle: _toggleSlot,
-          enabled: !_saving,
+          enabled: !_saving && !_submitting,
         ),
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _saving ? null : _save,
+            onPressed: _saving || _submitting ? null : _save,
             child: _saving
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text('Lưu (${_selectedSlots.length} slot)'),
+                : Text('Lưu nháp (${_selectedSlots.length} slot)'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _saving || _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Gửi đăng ký'),
           ),
         ),
       ],

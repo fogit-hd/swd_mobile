@@ -210,80 +210,123 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.event_note, color: AppTheme.primary, size: 20),
-                      const SizedBox(width: AppSpacing.xs),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.calendar_month_rounded, color: AppTheme.primary, size: 18),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           '${slot.dayLabel} • ${slot.slotLabel}',
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             fontSize: 16,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ),
-                      Text(
-                        slot.room,
-                        style: const TextStyle(
-                          color: AppTheme.mediumGray,
-                          fontSize: 13,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          slot.room,
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 6),
                   Text(
-                    '${slot.groups.length} nhóm',
+                    '${slot.groups.length} nhóm đồ án',
                     style: const TextStyle(
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.mediumGray,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 12),
                   ...slot.groups.map((g) {
+                    final statusObj = _statusOf(g.status);
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                      child: Material(
-                        color: AppTheme.statusPendingBg,
-                        borderRadius: BorderRadius.circular(10),
-                        child: InkWell(
-                          onTap: () => _openGroup(g),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: AppSpacing.sm,
-                            ),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: IntrinsicHeight(
                             child: Row(
                               children: [
+                                Container(
+                                  width: 4,
+                                  color: statusObj.foreground,
+                                ),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        g.groupCode,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
+                                  child: Material(
+                                    color: const Color(0xFFF8FAFC),
+                                    child: InkWell(
+                                      onTap: () => _openGroup(g),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    g.groupCode,
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w700,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    g.topicName,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: AppTheme.mediumGray,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            StatusBadge(
+                                              status: statusObj,
+                                              compact: true,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: AppTheme.mediumGray,
+                                              size: 20,
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      Text(
-                                        g.topicName,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.mediumGray,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                StatusBadge(
-                                  status: _statusOf(g.status),
-                                  compact: true,
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: AppTheme.mediumGray,
                                 ),
                               ],
                             ),

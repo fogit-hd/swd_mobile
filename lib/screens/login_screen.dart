@@ -258,64 +258,21 @@ class _LoginScreenState extends State<LoginScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Animated Breathing 3D Logo Icon
+                                // ĐỘC LẠ: Animated Quantum AI Logo Emblem
                                 FadeSlideIn(
                                   delay: AppAnimations.stagger(0),
                                   offset: const Offset(0, -0.08),
                                   child: Center(
-                                    child: AnimatedBuilder(
-                                      animation: _animController,
-                                      builder: (context, child) {
-                                        final pulse = math.sin(_animController.value * 2 * math.pi);
-                                        return Transform.translate(
-                                          offset: Offset(0, -6 * pulse),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 400),
-                                            width: 80,
-                                            height: 80,
-                                            decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: activeGradient,
-                                              ),
-                                              borderRadius: BorderRadius.circular(22),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: activeColor.withValues(alpha: 0.45 + 0.15 * pulse),
-                                                  blurRadius: 24 + 10 * pulse,
-                                                  offset: Offset(0, 10 + 4 * pulse),
-                                                ),
-                                              ],
-                                            ),
-                                            child: const Icon(
-                                              Icons.school_rounded,
-                                              size: 44,
-                                              color: AppTheme.white,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                    child: _QuantumLogoEmblem(
+                                      animController: _animController,
+                                      activeColor: activeColor,
+                                      activeGradient: activeGradient,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 22),
+                                const SizedBox(height: 18),
                                 FadeSlideIn(
                                   delay: AppAnimations.stagger(1),
-                                  child: const Text(
-                                    'CPM System',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppTheme.black,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                FadeSlideIn(
-                                  delay: AppAnimations.stagger(2),
                                   child: Text(
                                     'Đăng nhập cổng quản lý & đánh giá đồ án',
                                     textAlign: TextAlign.center,
@@ -535,6 +492,156 @@ class _NeuralConstellationPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _NeuralConstellationPainter oldDelegate) => true;
+}
+
+class _QuantumLogoEmblem extends StatelessWidget {
+  const _QuantumLogoEmblem({
+    required this.animController,
+    required this.activeColor,
+    required this.activeGradient,
+  });
+
+  final AnimationController animController;
+  final Color activeColor;
+  final List<Color> activeGradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animController,
+      builder: (context, child) {
+        final t = animController.value;
+        final pulse = math.sin(t * 2 * math.pi);
+
+        return SizedBox(
+          width: 115,
+          height: 115,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 1. Quỹ đạo Photon Halo xoay 360 độ độc lạ
+              CustomPaint(
+                size: const Size(115, 115),
+                painter: _QuantumHaloPainter(
+                  progress: t,
+                  color: activeColor,
+                ),
+              ),
+              // 2. Thẻ Squircle 3D Holographic nổi ở trung tâm
+              Transform.translate(
+                offset: Offset(0, -4 * pulse),
+                child: Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF0F172A),
+                        activeColor,
+                        const Color(0xFF06B6D4),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.65),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.55 + 0.15 * pulse),
+                        blurRadius: 28 + 8 * pulse,
+                        offset: Offset(0, 12 + 4 * pulse),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // AI Core Glow
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.white.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      // Icon Mũ Cử Nhân AI
+                      const Icon(
+                        Icons.school_rounded,
+                        size: 42,
+                        color: AppTheme.white,
+                      ),
+                      const Positioned(
+                        right: 18,
+                        top: 18,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: Color(0xFFFACC15),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _QuantumHaloPainter extends CustomPainter {
+  _QuantumHaloPainter({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 4;
+
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..shader = ui.Gradient.sweep(
+        center,
+        [
+          color.withValues(alpha: 0.0),
+          const Color(0xFF38BDF8).withValues(alpha: 0.85),
+          color.withValues(alpha: 0.0),
+        ],
+        [0.0, 0.5, 1.0],
+        TileMode.clamp,
+        progress * 2 * math.pi,
+        (progress + 1) * 2 * math.pi,
+      );
+
+    canvas.drawCircle(center, radius, ringPaint);
+
+    // 3 Hạt Photon bay vòng quanh
+    final dotPaint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 3; i++) {
+      final angle = progress * 2 * math.pi + (i * 2 * math.pi / 3);
+      final px = center.dx + radius * math.cos(angle);
+      final py = center.dy + radius * math.sin(angle);
+
+      dotPaint.color = const Color(0xFF38BDF8);
+      canvas.drawCircle(Offset(px, py), 3, dotPaint);
+
+      dotPaint.color = const Color(0xFF38BDF8).withValues(alpha: 0.4);
+      canvas.drawCircle(Offset(px, py), 7, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _QuantumHaloPainter oldDelegate) => true;
 }
 
 void logout(BuildContext context) {

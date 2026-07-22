@@ -320,21 +320,29 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
               ListView(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 130),
                 children: [
-                  // Hero Gradient Header Banner: High contrast, royal blue/indigo depth
+                  // Hero Gradient Header Banner: High contrast, royal blue/indigo depth & neon highlights
                   Container(
-                    padding: const EdgeInsets.all(28),
+                    padding: const EdgeInsets.all(26),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF1E293B), Color(0xFF1E40AF), Color(0xFF312E81)],
+                        colors: [
+                          Color(0xFF0F172A),
+                          Color(0xFF1E3A8A),
+                          Color(0xFF312E81),
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                        width: 1.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E40AF).withValues(alpha: 0.28),
-                          blurRadius: 30,
-                          offset: const Offset(0, 14),
+                          color: const Color(0xFF1E40AF).withValues(alpha: 0.35),
+                          blurRadius: 32,
+                          offset: const Offset(0, 16),
                         ),
                       ],
                     ),
@@ -343,19 +351,26 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppTheme.white.withValues(alpha: 0.15),
+                                color: AppTheme.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(50),
                                 border: Border.all(color: AppTheme.white.withValues(alpha: 0.25)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.bolt_rounded, color: Color(0xFFFACC15), size: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF59E0B),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.bolt_rounded, color: AppTheme.black, size: 12),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     widget.mode == SlotRegistrationMode.lecturer
@@ -363,7 +378,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                         : 'NHÓM SINH VIÊN',
                                     style: const TextStyle(
                                       color: AppTheme.white,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w800,
                                       fontSize: 11,
                                       letterSpacing: 0.5,
                                     ),
@@ -372,19 +387,39 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                color: const Color(0xFF06B6D4).withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(50),
-                                border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.5)),
+                                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
-                              child: Text(
-                                'Đã chọn: ${_selected.length} ca',
-                                style: const TextStyle(
-                                  color: Color(0xFF6EE7B7),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF34D399),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Đã chọn: ${_selected.length} ca',
+                                    style: const TextStyle(
+                                      color: Color(0xFF38BDF8),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

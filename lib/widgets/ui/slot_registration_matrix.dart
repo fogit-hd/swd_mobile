@@ -53,51 +53,85 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
       onTap: canTap ? widget.onTap : null,
       child: AnimatedContainer(
         duration: AppAnimations.fast,
-        curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_pressed ? 0.95 : 1.0),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.diagonal3Values(_pressed ? 0.94 : 1.0, _pressed ? 0.94 : 1.0, 1.0),
         constraints: const BoxConstraints(
           minWidth: AppSpacing.minTouchTarget,
-          minHeight: AppSpacing.minTouchTarget,
+          minHeight: 56,
         ),
         decoration: BoxDecoration(
           color: widget.selected
-              ? AppTheme.primary
+              ? null
               : _isFull
                   ? AppTheme.errorLight
-                  : AppTheme.statusPendingBg,
-          borderRadius: BorderRadius.circular(12),
+                  : null,
+          gradient: widget.selected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                )
+              : _isFull
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
+                    ),
+          borderRadius: BorderRadius.circular(14),
+          border: widget.selected
+              ? null
+              : Border.all(
+                  color: _isFull
+                      ? AppTheme.error.withValues(alpha: 0.4)
+                      : const Color(0xFFDBEAFE),
+                  width: 1.0,
+                ),
           boxShadow: widget.selected
               ? [
                   BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                    color: const Color(0xFF4F46E5).withValues(alpha: 0.42),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.03),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              widget.selected ? Icons.check_rounded : Icons.add_rounded,
-              size: 18,
-              color: widget.selected
-                  ? AppTheme.white
-                  : _isFull
-                      ? AppTheme.error
-                      : AppTheme.mediumGray,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+              child: Icon(
+                widget.selected ? Icons.check_rounded : (_isFull ? Icons.lock_outline_rounded : Icons.add_rounded),
+                key: ValueKey(widget.selected ? 'check' : (_isFull ? 'full' : 'add')),
+                size: 20,
+                color: widget.selected
+                    ? AppTheme.white
+                    : _isFull
+                        ? AppTheme.error
+                        : const Color(0xFF3B82F6),
+              ),
             ),
             if (widget.showOccupancy && widget.occupiedCount != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 '${widget.occupiedCount}/${widget.maxOccupancy}',
                 style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                   color: widget.selected
-                      ? AppTheme.white.withValues(alpha: 0.9)
-                      : AppTheme.mediumGray,
+                      ? AppTheme.white.withValues(alpha: 0.95)
+                      : _isFull
+                          ? AppTheme.error
+                          : const Color(0xFF1E40AF),
                 ),
               ),
             ],
@@ -133,79 +167,141 @@ class SlotRegistrationMatrix extends StatelessWidget {
   static String cellKey(int day, int slot) => '$day-$slot';
 
   static const _slotLabels = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4', 'Ca Tối'];
+  static const _slotTimes = [
+    '07:30 - 09:30',
+    '09:45 - 11:45',
+    '13:00 - 15:00',
+    '15:15 - 17:15',
+    '18:00 - 20:00',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final days = List.generate(dayCount, (i) => i + 1);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header: 6 cột ngày
-        Row(
-          children: [
-            const SizedBox(width: 52),
-            ...days.map(
-              (d) => Expanded(
-                child: Center(
-                  child: Text(
-                    dayLabel(d),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: AppTheme.darkGray,
+    return Container(
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(20),
+        // 1. Kill the Borders: border-0 floating card separated purely by ultra-soft elevated drop shadows
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header: 6 cột ngày với badge hiện đại dark navy
+          Row(
+            children: [
+              const SizedBox(width: 72),
+              ...days.map(
+                (d) => Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      dayLabel(d),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                        color: AppTheme.white,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        // 5 hàng slot
-        ...List.generate(slotCount, (slotIndex) {
-          final slot = slotIndex + 1;
-          final label = slotIndex < _slotLabels.length
-              ? _slotLabels[slotIndex]
-              : 'Ca $slot';
+            ],
+          ),
+          // 2. Maximize Breathing Room: larger gaps between header and matrix rows
+          const SizedBox(height: 18),
+          // 5 hàng slot
+          ...List.generate(slotCount, (slotIndex) {
+            final slot = slotIndex + 1;
+            final label = slotIndex < _slotLabels.length
+                ? _slotLabels[slotIndex]
+                : 'Ca $slot';
+            final time = slotIndex < _slotTimes.length
+                ? _slotTimes[slotIndex]
+                : '';
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 52,
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.mediumGray,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 68,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E40AF),
+                          ),
+                        ),
+                        if (time.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            time,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF4F46E5),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ),
-                ...days.map((day) {
-                  final key = cellKey(day, slot);
-                  final occupied = occupancyMap?[key] ?? 0;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: SlotMatrixCell(
-                        selected: selectedKeys.contains(key),
-                        enabled: enabled,
-                        showOccupancy: showOccupancy,
-                        occupiedCount: showOccupancy ? occupied : null,
-                        onTap: () => onToggle(day, slot),
+                  const SizedBox(width: 4),
+                  ...days.map((day) {
+                    final key = cellKey(day, slot);
+                    final occupied = occupancyMap?[key] ?? 0;
+                    return Expanded(
+                      child: Padding(
+                        // Generous whitespace between columns
+                        padding: const EdgeInsets.all(5),
+                        child: SlotMatrixCell(
+                          selected: selectedKeys.contains(key),
+                          enabled: enabled,
+                          showOccupancy: showOccupancy,
+                          occupiedCount: showOccupancy ? occupied : null,
+                          onTap: () => onToggle(day, slot),
+                        ),
                       ),
-                    ),
-                  );
-                }),
-              ],
-            ),
-          );
-        }),
-      ],
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }

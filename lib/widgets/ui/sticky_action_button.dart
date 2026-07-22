@@ -57,28 +57,66 @@ class StickyActionButton extends StatelessWidget {
           ],
           SizedBox(
             width: double.infinity,
-            height: AppSpacing.minTouchTarget,
-            child: ElevatedButton(
-              onPressed: loading ? null : onPressed,
-              child: loading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.white,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (icon != null) ...[
-                          Icon(icon, size: 20),
-                          const SizedBox(width: AppSpacing.xs),
+            height: 52,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: (onPressed != null && !loading)
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                      )
+                    : null,
+                color: (onPressed == null || loading)
+                    ? AppTheme.lightGray
+                    : null,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: (onPressed != null && !loading)
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF4F46E5).withValues(alpha: 0.38),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: loading ? null : onPressed,
+                child: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (icon != null) ...[
+                            Icon(icon, size: 20, color: AppTheme.white),
+                            const SizedBox(width: AppSpacing.xs),
+                          ],
+                          Text(
+                            label,
+                            style: const TextStyle(
+                              color: AppTheme.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
                         ],
-                        Text(label),
-                      ],
-                    ),
+                      ),
+              ),
             ),
           ),
         ],

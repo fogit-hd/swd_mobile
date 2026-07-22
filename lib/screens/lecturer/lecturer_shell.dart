@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
+import '../../theme/app_theme.dart';
 import '../login_screen.dart';
 import '../../widgets/animated_bottom_nav.dart';
 import '../../widgets/animated_shell_body.dart';
@@ -9,7 +12,7 @@ import '../slot/slot_registration_screen.dart';
 import 'lecturer_defense_sessions_screen.dart';
 import 'lecturer_review_projects_screen.dart';
 
-/// Shell chính Giảng viên — 4 tab theo flow nghiệp vụ review.
+/// Shell chính Giảng viên — 4 tab theo flow nghiệp vụ review với điểm nhấn nền Ambient Mesh & Glassmorphic Banner.
 class LecturerShell extends StatefulWidget {
   const LecturerShell({super.key});
 
@@ -17,8 +20,10 @@ class LecturerShell extends StatefulWidget {
   State<LecturerShell> createState() => _LecturerShellState();
 }
 
-class _LecturerShellState extends State<LecturerShell> {
+class _LecturerShellState extends State<LecturerShell>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
+  late final AnimationController _meshController;
 
   static const _tabs = [
     (icon: Icons.calendar_month_outlined, label: 'Lịch chấm'),
@@ -26,6 +31,21 @@ class _LecturerShellState extends State<LecturerShell> {
     (icon: Icons.grid_view_rounded, label: 'Đăng ký ca'),
     (icon: Icons.gavel_outlined, label: 'Bảo vệ'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _meshController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _meshController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +56,34 @@ class _LecturerShellState extends State<LecturerShell> {
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
+        backgroundColor: AppTheme.white.withValues(alpha: 0.90),
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Stack(
+              children: [
+                const SizedBox.expand(),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    height: 2.5,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF2563EB),
+                          Color(0xFF06B6D4),
+                          Color(0xFF4F46E5),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         title: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOut,
@@ -54,6 +101,10 @@ class _LecturerShellState extends State<LecturerShell> {
           child: Text(
             _tabs[_index].label,
             key: ValueKey(_tabs[_index].label),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
           ),
         ),
         actions: [
@@ -66,19 +117,89 @@ class _LecturerShellState extends State<LecturerShell> {
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.primary),
             tooltip: 'Đăng xuất',
             onPressed: () => logout(context),
           ),
         ],
       ),
-      body: AnimatedShellBody(
-        index: _index,
-        children: const [
-          LecturerScheduleListScreen(),
-          LecturerReviewProjectsScreen(),
-          LecturerSlotRegistrationScreen(),
-          LecturerDefenseSessionsScreen(),
+      body: Stack(
+        children: [
+          // Điểm nhấn 1: Nền Ambient Mesh Orbs trôi dạt phía sau các trang
+          AnimatedBuilder(
+            animation: _meshController,
+            builder: (context, child) {
+              final t = _meshController.value;
+              final angle = t * 2 * math.pi;
+
+              return Stack(
+                children: [
+                  Align(
+                    alignment: Alignment(-0.85 + 0.3 * math.sin(angle), -0.7 + 0.2 * math.cos(angle)),
+                    child: Container(
+                      width: 320,
+                      height: 320,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF2563EB).withValues(alpha: 0.12),
+                            const Color(0xFF2563EB).withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment(0.85 - 0.25 * math.cos(angle), 0.5 + 0.25 * math.sin(angle)),
+                    child: Container(
+                      width: 360,
+                      height: 360,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF06B6D4).withValues(alpha: 0.10),
+                            const Color(0xFF06B6D4).withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment(0.1 + 0.35 * math.sin(angle * 1.3), -0.2 + 0.3 * math.cos(angle * 1.3)),
+                    child: Container(
+                      width: 280,
+                      height: 280,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF6366F1).withValues(alpha: 0.09),
+                            const Color(0xFF6366F1).withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+                    child: const SizedBox.expand(),
+                  ),
+                ],
+              );
+            },
+          ),
+          // Điểm nhấn 2: Nội dung nguyên bản không thay đổi logic/layout
+          AnimatedShellBody(
+            index: _index,
+            children: const [
+              LecturerScheduleListScreen(),
+              LecturerReviewProjectsScreen(),
+              LecturerSlotRegistrationScreen(),
+              LecturerDefenseSessionsScreen(),
+            ],
+          ),
         ],
       ),
       bottomNavigationBar: AnimatedBottomNavBar(

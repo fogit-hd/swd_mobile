@@ -275,6 +275,32 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
     if (mounted) setState(() => _saving = false);
   }
 
+  Widget _buildLegendDot(Color color, String label, {Color? border}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+            border: border != null ? Border.all(color: border) : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.mediumGray,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loading = widget.externalLoading && _selected.isEmpty;
@@ -292,35 +318,130 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
               )
             else
               ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  120,
-                ),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 130),
                 children: [
-                  Text(
-                    widget.mode == SlotRegistrationMode.lecturer
-                        ? 'Đăng ký ca trống'
-                        : 'Đăng ký ca review nhóm',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.black,
-                      letterSpacing: -0.3,
+                  // Hero Gradient Header Banner: High contrast, royal blue/indigo depth
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1E293B), Color(0xFF1E40AF), Color(0xFF312E81)],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E40AF).withValues(alpha: 0.28),
+                          blurRadius: 30,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(50),
+                                border: Border.all(color: AppTheme.white.withValues(alpha: 0.25)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.bolt_rounded, color: Color(0xFFFACC15), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    widget.mode == SlotRegistrationMode.lecturer
+                                        ? 'HỘI ĐỒNG ĐÁNH GIÁ'
+                                        : 'NHÓM SINH VIÊN',
+                                    style: const TextStyle(
+                                      color: AppTheme.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(50),
+                                border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.5)),
+                              ),
+                              child: Text(
+                                'Đã chọn: ${_selected.length} ca',
+                                style: const TextStyle(
+                                  color: Color(0xFF6EE7B7),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          widget.mode == SlotRegistrationMode.lecturer
+                              ? 'Đăng Ký Lịch Bảo Vệ & Chấm Điểm'
+                              : 'Đăng Ký Ca Review Nhóm Đồ Án',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.white,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.mode == SlotRegistrationMode.lecturer
+                              ? 'Vui lòng chọn các khung giờ bạn có thể tham gia chấm hội đồng. Lịch sẽ được tổng hợp tự động.'
+                              : 'Trưởng nhóm chọn 1 ca bảo vệ phù hợp với lịch trình của toàn bộ thành viên trong nhóm.',
+                          style: TextStyle(
+                            color: AppTheme.white.withValues(alpha: 0.85),
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    widget.mode == SlotRegistrationMode.lecturer
-                        ? 'Chọn khung giờ bạn có thể đi chấm'
-                        : 'Trưởng nhóm chọn 1 ca (tối đa 3 nhóm/ca)',
-                    style: const TextStyle(
-                      color: AppTheme.mediumGray,
-                      fontSize: 14,
+                  // Maximize Breathing Room: Push legend down
+                  const SizedBox(height: 24),
+                  // Legend bar styled inside a sleek Glassmorphic/elevated pill container
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildLegendDot(const Color(0xFFF1F5F9), 'Khả dụng', border: const Color(0xFFCBD5E1)),
+                        _buildLegendDot(const Color(0xFF2563EB), 'Đang chọn'),
+                        _buildLegendDot(AppTheme.errorLight, 'Kín chỗ / Khóa', border: AppTheme.error.withValues(alpha: 0.4)),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  // Maximize Breathing Room: Big gap pushing grid away from legends
+                  const SizedBox(height: 26),
                   SlotRegistrationMatrix(
                     selectedKeys: _selected,
                     enabled: !saving,

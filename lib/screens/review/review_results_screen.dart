@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../app/auth_scope.dart';
 import '../../models/review_submission.dart';
@@ -54,11 +55,19 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
   Future<void> _exportXlsx() async {
     try {
       final auth = AuthScope.of(context);
-      final bytes = await ReviewService(ApiClient(auth))
-          .exportSubmissionXlsx(widget.submissionId);
+      final file = await ReviewService(ApiClient(auth))
+          .exportSubmissionXlsxToFile(widget.submissionId);
+      final sizeKb = (await file.length() / 1024).toStringAsFixed(0);
+      if (!mounted) return;
+      await OpenFilex.open(file.path);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã tải file Excel (${bytes.length} bytes)')),
+        SnackBar(
+          content: Text(
+            'Đã xuất checklist Excel ($sizeKb KB). '
+            'Đây không phải tài liệu đồ án của nhóm.',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -75,8 +84,8 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
         title: const Text('Kết quả review'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_outlined),
-            tooltip: 'Xuất Excel',
+            icon: const Icon(Icons.table_view_outlined),
+            tooltip: 'Xuất checklist Excel',
             onPressed: _exportXlsx,
           ),
         ],

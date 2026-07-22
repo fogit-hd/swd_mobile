@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 
 import '../models/review_availability.dart';
 import '../models/review_enums.dart';
@@ -129,6 +132,17 @@ class ReviewService {
 
   Future<List<int>> exportSubmissionXlsx(int submissionId) =>
       _client.download('/api/review-submissions/$submissionId/export.xlsx');
+
+  /// Xuất checklist review ra file Excel tạm trên máy (không phải tài liệu nhóm).
+  Future<File> exportSubmissionXlsxToFile(int submissionId) async {
+    final bytes = await exportSubmissionXlsx(submissionId);
+    final dir = await getTemporaryDirectory();
+    final file = File(
+      '${dir.path}/review_checklist_$submissionId.xlsx',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
 
   static String defaultReviewType() => ReviewType.defaultType.apiValue;
 }

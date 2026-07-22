@@ -189,6 +189,19 @@ class ApiClient {
         return 'AI trả về dữ liệu chưa đủ. Thử lại sau.';
       case 'An unexpected error occurred.':
         return 'Máy chủ gặp lỗi khi xử lý gợi ý AI. Kiểm tra cấu hình Gemini hoặc thử lại sau.';
+      case 'Bạn không có quyền truy cập tài liệu của nhóm này.':
+        return 'Bạn không có quyền xem tài liệu nhóm này '
+            '(chỉ GVHD hoặc GV được phân công review).';
+      case 'Chỉ giảng viên được sử dụng AI phân tích tài liệu.':
+        return 'Chỉ giảng viên mới dùng được AI phân tích tài liệu.';
+      case 'Không tìm thấy tài liệu.':
+        return 'Không tìm thấy tài liệu.';
+      case 'Tệp không còn tồn tại trong kho lưu trữ.':
+        return 'File tài liệu không còn trên máy chủ.';
+      case 'AI chỉ phân tích PDF, DOCX hoặc TXT; hãy giải nén trước khi tải lên.':
+        return 'AI chỉ phân tích PDF, DOCX hoặc TXT. File ZIP cần giải nén trước.';
+      case 'Không trích xuất được nội dung văn bản từ tài liệu.':
+        return 'Không đọc được nội dung văn bản từ tài liệu để phân tích AI.';
       default:
         return raw;
     }

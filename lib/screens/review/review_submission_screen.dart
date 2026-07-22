@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../app/auth_scope.dart';
 import '../../models/review_enums.dart';
@@ -9,6 +10,7 @@ import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/checklist_labels.dart';
 import '../../widgets/app_loading.dart';
+import '../lecturer/lecturer_group_documents_screen.dart';
 
 class ReviewSubmissionScreen extends StatefulWidget {
   const ReviewSubmissionScreen({
@@ -276,6 +278,23 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       appBar: AppBar(
         title: Text('Chấm review · ${widget.sessionTitle}'),
         actions: [
+          if (submission.groupId > 0)
+            IconButton(
+              icon: const Icon(Icons.folder_open_outlined),
+              tooltip: 'Tài liệu nhóm',
+              onPressed: () {
+                Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => LecturerGroupDocumentsScreen(
+                      groupId: submission.groupId,
+                      groupCode:
+                          submission.groupCode ?? submission.projectName,
+                    ),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: _aiLoading
                 ? const SizedBox(
@@ -288,20 +307,25 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
             onPressed: (_saving || _aiLoading) ? null : _applyAiSuggestion,
           ),
           IconButton(
-            icon: const Icon(Icons.download_outlined),
-            tooltip: 'Xuất Excel',
+            icon: const Icon(Icons.table_view_outlined),
+            tooltip: 'Xuất checklist Excel',
             onPressed: _saving
                 ? null
                 : () async {
                     try {
                       final auth = AuthScope.of(context);
-                      final bytes = await ReviewService(ApiClient(auth))
-                          .exportSubmissionXlsx(widget.submissionId);
+                      final file = await ReviewService(ApiClient(auth))
+                          .exportSubmissionXlsxToFile(widget.submissionId);
+                      final sizeKb =
+                          (await file.length() / 1024).toStringAsFixed(0);
+                      if (!mounted) return;
+                      await OpenFilex.open(file.path);
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Đã tải file Excel (${bytes.length} bytes)',
+                            'Đã xuất checklist Excel ($sizeKb KB). '
+                            'Đây không phải tài liệu đồ án của nhóm.',
                           ),
                         ),
                       );
@@ -344,6 +368,8 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 _TextField(
                   label: 'Quy mô sản phẩm',
                   controller: _workSizeController,
+                  helperText:
+                      'Do giảng viên ghi nhận (vd. 4.5 MB, 45 trang) — không tự lấy từ file tài liệu',
                 ),
                 _TextField(
                   label: 'Thời gian thực hiện (giờ)',
@@ -567,12 +593,14 @@ class _TextField extends StatelessWidget {
     required this.controller,
     this.maxLines = 1,
     this.keyboardType,
+    this.helperText,
   });
 
   final String label;
   final TextEditingController controller;
   final int maxLines;
   final TextInputType? keyboardType;
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
@@ -582,7 +610,11 @@ class _TextField extends StatelessWidget {
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: helperText,
+          helperMaxLines: 2,
+        ),
       ),
     );
   }

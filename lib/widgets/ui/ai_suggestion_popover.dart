@@ -9,16 +9,18 @@ class AiSuggestionPopover extends StatefulWidget {
   const AiSuggestionPopover({
     super.key,
     required this.suggestion,
+    this.initiallyExpanded = false,
   });
 
   final ProjectSuggestion suggestion;
+  final bool initiallyExpanded;
 
   @override
   State<AiSuggestionPopover> createState() => _AiSuggestionPopoverState();
 }
 
 class _AiSuggestionPopoverState extends State<AiSuggestionPopover> {
-  bool _expanded = false;
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {

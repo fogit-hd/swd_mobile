@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../theme/app_animations.dart';
@@ -193,123 +195,131 @@ class SlotRegistrationMatrix extends StatelessWidget {
         // 1. Kill the Borders: border-0 floating card separated purely by ultra-soft elevated drop shadows
         boxShadow: AppTheme.cardShadow,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header: 6 cột ngày với badge hiện đại dark navy
-          Row(
-            children: [
-              const SizedBox(width: 72),
-              ...days.map(
-                (d) => Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFF0F172A,
-                          ).withValues(alpha: 0.18),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      dayLabel(d),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                        color: AppTheme.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // 2. Maximize Breathing Room: larger gaps between header and matrix rows
-          const SizedBox(height: 18),
-          // 5 hàng slot
-          ...List.generate(slotCount, (slotIndex) {
-            final slot = slotIndex + 1;
-            final label = slotIndex < _slotLabels.length
-                ? _slotLabels[slotIndex]
-                : 'Slot $slot';
-            final time = ReviewSlotSchedule.timeOf(slot);
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 68,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E40AF),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: math.max(constraints.maxWidth, 620),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header: 6 cột ngày với badge hiện đại dark navy
+                Row(
+                  children: [
+                    const SizedBox(width: 72),
+                    ...days.map(
+                      (d) => Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF0F172A,
+                                ).withValues(alpha: 0.18),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ),
-                        if (time.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            time,
+                          alignment: Alignment.center,
+                          child: Text(
+                            dayLabel(d),
                             style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF4F46E5),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                              color: AppTheme.white,
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ...days.map((day) {
-                    final key = cellKey(day, slot);
-                    final occupied = occupancyMap?[key] ?? 0;
-                    return Expanded(
-                      child: Padding(
-                        // Generous whitespace between columns
-                        padding: const EdgeInsets.all(5),
-                        child: SlotMatrixCell(
-                          selected: selectedKeys.contains(key),
-                          enabled: enabled,
-                          showOccupancy: showOccupancy,
-                          occupiedCount: showOccupancy ? occupied : null,
-                          onTap: () => onToggle(day, slot),
                         ),
                       ),
-                    );
-                  }),
-                ],
-              ),
-            );
-          }),
-        ],
+                    ),
+                  ],
+                ),
+                // 2. Maximize Breathing Room: larger gaps between header and matrix rows
+                const SizedBox(height: 18),
+                // 5 hàng slot
+                ...List.generate(slotCount, (slotIndex) {
+                  final slot = slotIndex + 1;
+                  final label = slotIndex < _slotLabels.length
+                      ? _slotLabels[slotIndex]
+                      : 'Slot $slot';
+                  final time = ReviewSlotSchedule.timeOf(slot);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 68,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1E40AF),
+                                ),
+                              ),
+                              if (time.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  time,
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF4F46E5),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        ...days.map((day) {
+                          final key = cellKey(day, slot);
+                          final occupied = occupancyMap?[key] ?? 0;
+                          return Expanded(
+                            child: Padding(
+                              // Generous whitespace between columns
+                              padding: const EdgeInsets.all(5),
+                              child: SlotMatrixCell(
+                                selected: selectedKeys.contains(key),
+                                enabled: enabled,
+                                showOccupancy: showOccupancy,
+                                occupiedCount: showOccupancy ? occupied : null,
+                                onTap: () => onToggle(day, slot),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

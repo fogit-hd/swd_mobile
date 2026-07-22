@@ -43,6 +43,38 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
   bool _loading = true;
   String? _error;
   bool _loadStarted = false;
+  bool _showTodayOnly = true;
+
+  DateTime _dateOnly(DateTime value) {
+    final local = value.toLocal();
+    return DateTime(local.year, local.month, local.day);
+  }
+
+  bool _isToday(ReviewSession session) {
+    final date = session.sessionDate;
+    if (date == null) return false;
+    return _dateOnly(date) == _dateOnly(DateTime.now());
+  }
+
+  int? _daysUntil(ReviewSession session) {
+    final date = session.sessionDate;
+    if (date == null) return null;
+    return _dateOnly(date).difference(_dateOnly(DateTime.now())).inDays;
+  }
+
+  String _reminderLabel(ReviewSession session) {
+    final days = _daysUntil(session) ?? 0;
+    if (days == 0) return 'Hôm nay';
+    if (days == 1) return 'Ngày mai';
+    return 'Còn $days ngày';
+  }
+
+  String _dateLabel(DateTime? value) {
+    if (value == null) return 'Chưa có ngày';
+    final date = value.toLocal();
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
 
   @override
   void didChangeDependencies() {
@@ -159,10 +191,28 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
       );
     }
 
-    var sessions = _sessions ?? [];
+    var sessions = [...?_sessions];
     final filter = widget.filter;
     if (filter != null) {
       sessions = sessions.where(filter).toList();
+    }
+    sessions.sort((a, b) {
+      final dateCompare = (a.sessionDate ?? DateTime(9999)).compareTo(
+        b.sessionDate ?? DateTime(9999),
+      );
+      return dateCompare != 0
+          ? dateCompare
+          : (a.slot ?? 99).compareTo(b.slot ?? 99);
+    });
+
+    final allSessions = sessions;
+    final todaySessions = allSessions.where(_isToday).toList();
+    final reminderSessions = allSessions.where((session) {
+      final days = _daysUntil(session);
+      return days != null && days >= 0 && days <= 3 && !session.isSubmitted;
+    }).toList();
+    if (widget.showAttendance && _showTodayOnly) {
+      sessions = todaySessions;
     }
 
     final submittedSummaries = _submissions
@@ -185,13 +235,119 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
             widget.subtitle,
             style: const TextStyle(color: AppTheme.mediumGray, fontSize: 14),
           ),
+          if (widget.showAttendance && reminderSessions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFCD34D)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_active_outlined,
+                        color: Color(0xFFD97706),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Nhắc lịch review sắp tới',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF92400E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...reminderSessions.map(
+                    (session) => Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFFFEF3C7),
+                          child: Text(
+                            '${session.slot ?? '—'}',
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          '${_reminderLabel(session)} · ${session.title}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(
+                          '${_dateLabel(session.sessionDate)} · ${session.timeLabel}'
+                          '${session.room?.isNotEmpty == true ? ' · ${session.room}' : ''}',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openSession(session),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
+          if (widget.showAttendance) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => setState(() => _showTodayOnly = true),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: _showTodayOnly
+                          ? AppTheme.primary.withValues(alpha: 0.1)
+                          : null,
+                    ),
+                    icon: const Icon(Icons.today_outlined),
+                    label: Text(
+                      'Hôm nay (${todaySessions.length})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => setState(() => _showTodayOnly = false),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: !_showTodayOnly
+                          ? AppTheme.primary.withValues(alpha: 0.1)
+                          : null,
+                    ),
+                    icon: const Icon(Icons.view_list_outlined),
+                    label: Text(
+                      'Tất cả (${allSessions.length})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           if (sessions.isEmpty)
             Padding(
               padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  widget.emptyMessage,
+                  widget.showAttendance && _showTodayOnly
+                      ? 'Hôm nay chưa có Slot review nào.'
+                      : widget.emptyMessage,
                   style: const TextStyle(color: AppTheme.mediumGray),
                 ),
               ),

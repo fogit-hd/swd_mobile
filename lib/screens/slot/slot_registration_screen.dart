@@ -376,9 +376,11 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 12,
+                          runSpacing: 10,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -410,7 +412,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                   const SizedBox(width: 6),
                                   Text(
                                     widget.mode == SlotRegistrationMode.lecturer
-                                        ? 'HỘI ĐỒNG ĐÁNH GIÁ'
+                                        ? 'GIẢNG VIÊN REVIEW'
                                         : 'NHÓM SINH VIÊN',
                                     style: const TextStyle(
                                       color: AppTheme.white,
@@ -518,8 +520,10 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                         ),
                       ],
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 16,
+                      runSpacing: 8,
                       children: [
                         _buildLegendDot(
                           const Color(0xFFF1F5F9),

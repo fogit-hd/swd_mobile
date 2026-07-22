@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:http/src/response.dart';
+
 import '../models/project_suggestion.dart';
 import '../models/review_submission.dart';
 import 'api_client.dart';
@@ -30,7 +32,7 @@ class AiSuggestionService {
       );
     }
 
-    late final response;
+    late final Response response;
     try {
       response = await _client
           .post(
@@ -78,10 +80,10 @@ class AiSuggestionService {
     final name = (submission.projectName?.trim().isNotEmpty == true)
         ? submission.projectName!.trim()
         : (fallbackProjectName?.trim().isNotEmpty == true)
-            ? fallbackProjectName!.trim()
-            : (submission.groupCode?.trim().isNotEmpty == true)
-                ? submission.groupCode!.trim()
-                : 'Đồ án #${submission.groupId}';
+        ? fallbackProjectName!.trim()
+        : (submission.groupCode?.trim().isNotEmpty == true)
+        ? submission.groupCode!.trim()
+        : 'Đồ án #${submission.groupId}';
 
     final content = buildProjectContent(submission);
     if (content.trim().isEmpty) {

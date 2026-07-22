@@ -154,14 +154,22 @@ class ReviewContextBarState extends State<ReviewContextBar> {
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: const Color(0xFF2563EB).withValues(alpha: 0.18),
+          width: 1.2,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<Semester>(
               key: ValueKey('semester-${semester.id}'),
               initialValue: semester,
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: 'Học kỳ',
                 isDense: true,
@@ -170,7 +178,10 @@ class ReviewContextBarState extends State<ReviewContextBar> {
                   .map(
                     (s) => DropdownMenuItem(
                       value: s,
-                      child: Text(s.displayName),
+                      child: Text(
+                        s.displayName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   )
                   .toList(),
@@ -180,7 +191,7 @@ class ReviewContextBarState extends State<ReviewContextBar> {
                 _loadRounds(value.id);
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             if (_loadingRounds)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -195,6 +206,7 @@ class ReviewContextBarState extends State<ReviewContextBar> {
               DropdownButtonFormField<ReviewRound>(
                 key: ValueKey('round-${_round?.id ?? 0}'),
                 initialValue: _round,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Đợt review',
                   isDense: true,

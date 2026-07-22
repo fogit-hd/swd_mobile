@@ -16,6 +16,7 @@ import '../../widgets/ui/ai_suggestion_popover.dart';
 import '../../widgets/ui/pulse_gradient_button.dart';
 import '../../widgets/ui/shimmer_loading.dart';
 import '../../widgets/ui/status_badge.dart';
+import '../../utils/review_slot_schedule.dart';
 import '../lecturer/lecturer_group_documents_screen.dart';
 import 'review_submission_screen.dart';
 
@@ -35,13 +36,16 @@ class ReviewLiveSessionScreen extends StatefulWidget {
   final int? groupId;
   final String? groupCode;
   final int? submissionId;
+
   /// Trạng thái hiển thị từ danh sách lịch (tránh luôn hiện "Đang chấm").
   final ProjectReviewStatus? initialStatus;
+
   /// Gợi ý AI truyền sẵn (demo / override). Null → gọi BE.
   final ProjectSuggestion? aiSummary;
 
   @override
-  State<ReviewLiveSessionScreen> createState() => _ReviewLiveSessionScreenState();
+  State<ReviewLiveSessionScreen> createState() =>
+      _ReviewLiveSessionScreenState();
 }
 
 class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
@@ -76,8 +80,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
     final submissionId = widget.submissionId;
     if (submissionId != null && submissionId > 0) {
       try {
-        final submission =
-            await ReviewService(client).fetchSubmission(submissionId);
+        final submission = await ReviewService(
+          client,
+        ).fetchSubmission(submissionId);
         if (submission.groupId > 0) return submission.groupId;
       } catch (_) {}
     }
@@ -89,9 +94,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
         if (s.sessionId != widget.sessionId || s.groupId <= 0) continue;
         if (code == null || code.isEmpty) return s.groupId;
         // Khớp theo submissionId nếu có.
-        if (submissionId != null &&
-            submissionId > 0 &&
-            s.id == submissionId) {
+        if (submissionId != null && submissionId > 0 && s.id == submissionId) {
           return s.groupId;
         }
       }
@@ -114,8 +117,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
         final semester = await semesterService.getActiveSemester();
         final groups = await semesterService.fetchGroups(semester.id);
         for (final g in groups) {
-          if (g.code != null &&
-              g.code!.toLowerCase() == code.toLowerCase()) {
+          if (g.code != null && g.code!.toLowerCase() == code.toLowerCase()) {
             return g.id;
           }
         }
@@ -189,8 +191,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       final submissionId = widget.submissionId;
       if (submissionId != null && submissionId > 0) {
         try {
-          final submission =
-              await ReviewService(client).fetchSubmission(submissionId);
+          final submission = await ReviewService(
+            client,
+          ).fetchSubmission(submissionId);
           if (submission.isSubmitted) {
             status = ProjectReviewStatus.completed;
           }
@@ -336,11 +339,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
     final note = _noteController.text.trim();
     final groupId = _data?.groupId;
     if (note.isEmpty || groupId == null || groupId <= 0) return;
-    await service.addComment(
-      widget.sessionId,
-      groupId: groupId,
-      content: note,
-    );
+    await service.addComment(widget.sessionId, groupId: groupId, content: note);
   }
 
   Future<void> _saveAttendance() async {
@@ -367,9 +366,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       await _persistNoteIfAny(service);
       if (!mounted) return;
       setState(() => _data = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu điểm danh')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã lưu điểm danh')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -408,8 +407,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       // Kết thúc buổi còn yêu cầu mọi reviewer đã GỬI bài chấm checklist.
       final submissionId = widget.submissionId;
       if (submissionId != null && submissionId > 0) {
-        final submission =
-            await ReviewService(client).fetchSubmission(submissionId);
+        final submission = await ReviewService(
+          client,
+        ).fetchSubmission(submissionId);
         if (!submission.isSubmitted) {
           if (!mounted) return;
           setState(() => _completing = false);
@@ -418,7 +418,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
             builder: (ctx) => AlertDialog(
               title: const Text('Chưa gửi bài chấm'),
               content: const Text(
-                'Điểm danh đã lưu. Để kết thúc buổi, bạn cần gửi bài chấm checklist '
+                'Điểm danh đã lưu. Để kết thúc buổi, bạn cần gửi checklist nhận xét '
                 'ở form review (và các giảng viên được phân công khác cũng phải gửi).',
               ),
               actions: [
@@ -454,9 +454,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       );
       if (!mounted) return;
       setState(() => _groupStatus = ProjectReviewStatus.completed);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã hoàn tất review nhóm')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã hoàn tất review nhóm')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -545,16 +545,13 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
           children: [
             Text(
               '${data.groupCode ?? ''} • ${data.sessionCode ?? ''}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             if (data.room != null)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xxs),
                 child: Text(
-                  'Phòng ${data.room} • Ca ${data.slot ?? '—'}',
+                  'Phòng ${data.room} • ${ReviewSlotSchedule.labelOf(data.slot)}',
                   style: const TextStyle(
                     color: AppTheme.mediumGray,
                     fontSize: 13,
@@ -600,8 +597,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
                       ),
                     ),
                     label: Text(s.fullName ?? s.studentCode ?? '—'),
-                    backgroundColor:
-                        absent ? AppTheme.errorLight : AppTheme.white,
+                    backgroundColor: absent
+                        ? AppTheme.errorLight
+                        : AppTheme.white,
                     side: BorderSide(
                       color: absent ? AppTheme.error : AppTheme.lightGray,
                     ),
@@ -647,7 +645,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Kết thúc khi đã điểm danh đủ và mọi giảng viên phân công đã gửi bài chấm.',
+                'Kết thúc khi đã điểm danh đủ và mọi giảng viên được phân công đã gửi nhận xét.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppTheme.mediumGray,

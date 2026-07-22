@@ -109,7 +109,8 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
       Navigator.push<void>(
         context,
         MaterialPageRoute<void>(
-          builder: (_) => ReviewResultsScreen(submissionId: session.submissionId),
+          builder: (_) =>
+              ReviewResultsScreen(submissionId: session.submissionId),
         ),
       );
       return;
@@ -164,8 +165,9 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
       sessions = sessions.where(filter).toList();
     }
 
-    final submittedSummaries =
-        _submissions.where((s) => s.isSubmitted).toList();
+    final submittedSummaries = _submissions
+        .where((s) => s.isSubmitted)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -203,8 +205,8 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
                 highlight: session.canEditReview,
                 trailing: widget.readOnly
                     ? (session.canViewResults
-                        ? const Icon(Icons.visibility_outlined)
-                        : null)
+                          ? const Icon(Icons.visibility_outlined)
+                          : null)
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -223,8 +225,8 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
                                     initialStatus: session.isSubmitted
                                         ? ProjectReviewStatus.completed
                                         : session.canEditReview
-                                            ? ProjectReviewStatus.inProgress
-                                            : ProjectReviewStatus.notStarted,
+                                        ? ProjectReviewStatus.inProgress
+                                        : ProjectReviewStatus.notStarted,
                                   ),
                                 ),
                               ),
@@ -235,8 +237,10 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
                 subtitleExtra: summary == null
                     ? null
                     : [
-                        if (summary.result != null) 'KQ: ${summary.result}',
-                        if (summary.score != null) 'Điểm: ${summary.score}',
+                        if (summary.reviewerName != null)
+                          'Giảng viên: ${summary.reviewerName}',
+                        if (summary.notes != null && summary.notes!.isNotEmpty)
+                          summary.notes!,
                       ].join(' · '),
                 onTap: () => _openSession(session),
               );
@@ -244,20 +248,18 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
           if (submittedSummaries.isNotEmpty) ...[
             const SizedBox(height: 28),
             const Text(
-              'Kết quả đã gửi',
+              'Nhận xét đã gửi',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             ...submittedSummaries.map(
               (s) => Card(
                 child: ListTile(
-                  title: Text(
-                    '${s.reviewTypeLabel} · Nhóm #${s.groupId}',
-                  ),
+                  title: Text('${s.reviewTypeLabel} · Nhóm #${s.groupId}'),
                   subtitle: Text(
                     [
-                      if (s.result != null) 'Kết quả: ${s.result}',
-                      if (s.score != null) 'Điểm: ${s.score}',
+                      if (s.reviewerName != null)
+                        'Giảng viên: ${s.reviewerName}',
                       if (s.notes != null && s.notes!.isNotEmpty) s.notes!,
                       'Trạng thái: ${s.statusLabel}',
                     ].join(' · '),

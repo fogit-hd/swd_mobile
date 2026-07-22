@@ -36,8 +36,9 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
   Future<void> _load() async {
     try {
       final auth = AuthScope.of(context);
-      final submission = await ReviewService(ApiClient(auth))
-          .fetchSubmission(widget.submissionId);
+      final submission = await ReviewService(
+        ApiClient(auth),
+      ).fetchSubmission(widget.submissionId);
       if (!mounted) return;
       setState(() {
         _submission = submission;
@@ -55,8 +56,9 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
   Future<void> _exportXlsx() async {
     try {
       final auth = AuthScope.of(context);
-      final file = await ReviewService(ApiClient(auth))
-          .exportSubmissionXlsxToFile(widget.submissionId);
+      final file = await ReviewService(
+        ApiClient(auth),
+      ).exportSubmissionXlsxToFile(widget.submissionId);
       final sizeKb = (await file.length() / 1024).toStringAsFixed(0);
       if (!mounted) return;
       await OpenFilex.open(file.path);
@@ -81,7 +83,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kết quả review'),
+        title: const Text('Chi tiết nhận xét'),
         actions: [
           IconButton(
             icon: const Icon(Icons.table_view_outlined),
@@ -96,12 +98,12 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const AppLoadingIndicator(message: 'Đang tải kết quả...');
+      return const AppLoadingIndicator(message: 'Đang tải nhận xét...');
     }
 
     final submission = _submission;
     if (_error != null || submission == null) {
-      return Center(child: Text(_error ?? 'Không tải được kết quả'));
+      return Center(child: Text(_error ?? 'Không tải được nhận xét'));
     }
 
     return ListView(
@@ -179,7 +181,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
         const Divider(height: 32),
         _InfoBlock(title: 'Nhận xét chung', value: submission.reviewerComment),
         _InfoBlock(title: 'Gợi ý', value: submission.suggestion),
-        _InfoBlock(title: 'Kết quả', value: submission.resultText),
+        _InfoBlock(title: 'Ghi nhận cuối buổi', value: submission.resultText),
       ],
     );
   }

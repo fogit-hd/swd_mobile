@@ -12,6 +12,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../utils/week_utils.dart';
+import '../../utils/review_slot_schedule.dart';
 import '../../widgets/ui/edu_card.dart';
 import '../../widgets/ui/shimmer_loading.dart';
 import '../../widgets/ui/status_badge.dart';
@@ -26,7 +27,8 @@ class LecturerScheduleListScreen extends StatefulWidget {
       _LecturerScheduleListScreenState();
 }
 
-class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen> {
+class _LecturerScheduleListScreenState
+    extends State<LecturerScheduleListScreen> {
   List<LecturerReviewSlot>? _slots;
   bool _loading = true;
   String? _error;
@@ -58,8 +60,7 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
     });
     try {
       final auth = AuthScope.of(context);
-      final sessions =
-          await ReviewService(ApiClient(auth)).fetchMySessions();
+      final sessions = await ReviewService(ApiClient(auth)).fetchMySessions();
       if (!mounted) return;
       setState(() {
         _slots = _groupSessions(sessions);
@@ -75,8 +76,9 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
   }
 
   List<LecturerReviewSlot> _groupSessions(List<ReviewSession> sessions) {
-    final published =
-        sessions.where((s) => s.isPublished || s.canEditReview).toList();
+    final published = sessions
+        .where((s) => s.isPublished || s.canEditReview)
+        .toList();
     published.sort((a, b) {
       final da = a.sessionDate ?? DateTime(2100);
       final db = b.sessionDate ?? DateTime(2100);
@@ -100,7 +102,7 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
         dayLabel: date != null
             ? '${dayLabel(date.weekday)} ${date.day}/${date.month}'
             : '—',
-        slotLabel: slot == 5 ? 'Ca Tối' : 'Ca $slot',
+        slotLabel: ReviewSlotSchedule.labelOf(slot),
         room: first.room ?? '—',
         sessionDate: date,
         sortKey: date?.millisecondsSinceEpoch ?? 0,
@@ -108,14 +110,15 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
             .map(
               (s) => LecturerReviewGroup(
                 groupCode: s.groupCode ?? s.title,
-                topicName: (s.topicName != null && s.topicName!.trim().isNotEmpty)
+                topicName:
+                    (s.topicName != null && s.topicName!.trim().isNotEmpty)
                     ? s.topicName!.trim()
                     : _reviewTypeLabel(s.type),
                 status: s.isSubmitted
                     ? ProjectScheduleStatus.completed
                     : s.canEditReview
-                        ? ProjectScheduleStatus.inProgress
-                        : ProjectScheduleStatus.published,
+                    ? ProjectScheduleStatus.inProgress
+                    : ProjectScheduleStatus.published,
                 sessionId: s.sessionId,
                 groupId: s.groupId,
                 submissionId: s.submissionId,
@@ -123,15 +126,14 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
             )
             .toList(),
       );
-    }).toList()
-      ..sort((a, b) => a.sortKey.compareTo(b.sortKey));
+    }).toList()..sort((a, b) => a.sortKey.compareTo(b.sortKey));
   }
 
   ProjectReviewStatus _statusOf(ProjectScheduleStatus s) => switch (s) {
-        ProjectScheduleStatus.completed => ProjectReviewStatus.completed,
-        ProjectScheduleStatus.inProgress => ProjectReviewStatus.inProgress,
-        _ => ProjectReviewStatus.notStarted,
-      };
+    ProjectScheduleStatus.completed => ProjectReviewStatus.completed,
+    ProjectScheduleStatus.inProgress => ProjectReviewStatus.inProgress,
+    _ => ProjectReviewStatus.notStarted,
+  };
 
   String _reviewTypeLabel(String? type) => DisplayLabels.reviewType(type);
 
@@ -216,7 +218,11 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                           color: AppTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.calendar_month_rounded, color: AppTheme.primary, size: 18),
+                        child: const Icon(
+                          Icons.calendar_month_rounded,
+                          color: AppTheme.primary,
+                          size: 18,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -230,7 +236,10 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(8),
@@ -265,7 +274,10 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                         decoration: BoxDecoration(
                           color: AppTheme.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -296,7 +308,8 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                                                   Text(
                                                     g.groupCode,
                                                     style: const TextStyle(
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       fontSize: 14,
                                                     ),
                                                   ),
@@ -305,7 +318,8 @@ class _LecturerScheduleListScreenState extends State<LecturerScheduleListScreen>
                                                     g.topicName,
                                                     style: const TextStyle(
                                                       fontSize: 12,
-                                                      color: AppTheme.mediumGray,
+                                                      color:
+                                                          AppTheme.mediumGray,
                                                     ),
                                                   ),
                                                 ],

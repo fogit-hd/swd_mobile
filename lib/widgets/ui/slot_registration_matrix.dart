@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_animations.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/review_slot_schedule.dart';
 import '../../utils/week_utils.dart';
 
 /// Một ô trong ma trận 6 ngày × 5 slot.
@@ -23,6 +24,7 @@ class SlotMatrixCell extends StatefulWidget {
   final bool selected;
   final VoidCallback? onTap;
   final bool enabled;
+
   /// Số nhóm đã đăng ký (chế độ sinh viên).
   final int? occupiedCount;
   final int maxOccupancy;
@@ -54,7 +56,11 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
       child: AnimatedContainer(
         duration: AppAnimations.fast,
         curve: Curves.easeOutCubic,
-        transform: Matrix4.diagonal3Values(_pressed ? 0.94 : 1.0, _pressed ? 0.94 : 1.0, 1.0),
+        transform: Matrix4.diagonal3Values(
+          _pressed ? 0.94 : 1.0,
+          _pressed ? 0.94 : 1.0,
+          1.0,
+        ),
         constraints: const BoxConstraints(
           minWidth: AppSpacing.minTouchTarget,
           minHeight: 56,
@@ -63,8 +69,8 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
           color: widget.selected
               ? null
               : _isFull
-                  ? AppTheme.errorLight
-                  : null,
+              ? AppTheme.errorLight
+              : null,
           gradient: widget.selected
               ? const LinearGradient(
                   begin: Alignment.topLeft,
@@ -72,12 +78,12 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
                   colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
                 )
               : _isFull
-                  ? null
-                  : const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
-                    ),
+              ? null
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
+                ),
           borderRadius: BorderRadius.circular(14),
           border: widget.selected
               ? null
@@ -108,16 +114,23 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 180),
-              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
               child: Icon(
-                widget.selected ? Icons.check_rounded : (_isFull ? Icons.lock_outline_rounded : Icons.add_rounded),
-                key: ValueKey(widget.selected ? 'check' : (_isFull ? 'full' : 'add')),
+                widget.selected
+                    ? Icons.check_rounded
+                    : (_isFull
+                          ? Icons.lock_outline_rounded
+                          : Icons.add_rounded),
+                key: ValueKey(
+                  widget.selected ? 'check' : (_isFull ? 'full' : 'add'),
+                ),
                 size: 20,
                 color: widget.selected
                     ? AppTheme.white
                     : _isFull
-                        ? AppTheme.error
-                        : const Color(0xFF3B82F6),
+                    ? AppTheme.error
+                    : const Color(0xFF3B82F6),
               ),
             ),
             if (widget.showOccupancy && widget.occupiedCount != null) ...[
@@ -130,8 +143,8 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
                   color: widget.selected
                       ? AppTheme.white.withValues(alpha: 0.95)
                       : _isFull
-                          ? AppTheme.error
-                          : const Color(0xFF1E40AF),
+                      ? AppTheme.error
+                      : const Color(0xFF1E40AF),
                 ),
               ),
             ],
@@ -142,7 +155,7 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
   }
 }
 
-/// Ma trận cố định 6 ngày (T2–T7) × 5 slot (Ca 1–4 + Ca Tối).
+/// Ma trận cố định 6 ngày (T2–T7) × 5 slot review.
 class SlotRegistrationMatrix extends StatelessWidget {
   const SlotRegistrationMatrix({
     super.key,
@@ -166,14 +179,7 @@ class SlotRegistrationMatrix extends StatelessWidget {
 
   static String cellKey(int day, int slot) => '$day-$slot';
 
-  static const _slotLabels = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4', 'Ca Tối'];
-  static const _slotTimes = [
-    '07:30 - 09:30',
-    '09:45 - 11:45',
-    '13:00 - 15:00',
-    '15:15 - 17:15',
-    '18:00 - 20:00',
-  ];
+  static const _slotLabels = ['Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Slot 5'];
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +214,9 @@ class SlotRegistrationMatrix extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.18),
+                          color: const Color(
+                            0xFF0F172A,
+                          ).withValues(alpha: 0.18),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -235,10 +243,8 @@ class SlotRegistrationMatrix extends StatelessWidget {
             final slot = slotIndex + 1;
             final label = slotIndex < _slotLabels.length
                 ? _slotLabels[slotIndex]
-                : 'Ca $slot';
-            final time = slotIndex < _slotTimes.length
-                ? _slotTimes[slotIndex]
-                : '';
+                : 'Slot $slot';
+            final time = ReviewSlotSchedule.timeOf(slot);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
@@ -247,7 +253,10 @@ class SlotRegistrationMatrix extends StatelessWidget {
                 children: [
                   Container(
                     width: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEEF2FF),
                       borderRadius: BorderRadius.circular(10),

@@ -22,7 +22,9 @@ class ReviewSessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSubmitted = session.statusLabel == 'Đã gửi';
-    final accentColor = isSubmitted ? const Color(0xFF2563EB) : const Color(0xFF64748B);
+    final accentColor = isSubmitted
+        ? const Color(0xFF2563EB)
+        : const Color(0xFF64748B);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -72,12 +74,16 @@ class ReviewSessionCard extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      session.title,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                        letterSpacing: -0.3,
+                                    Expanded(
+                                      child: Text(
+                                        session.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                          letterSpacing: -0.3,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -93,7 +99,8 @@ class ReviewSessionCard extends StatelessWidget {
                                       fontSize: 13.5,
                                     ),
                                   ),
-                                if (subtitleExtra != null && subtitleExtra!.isNotEmpty) ...[
+                                if (subtitleExtra != null &&
+                                    subtitleExtra!.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
                                     subtitleExtra!,
@@ -105,10 +112,16 @@ class ReviewSessionCard extends StatelessWidget {
                                   ),
                                 ],
                                 const SizedBox(height: 10),
-                                Row(
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 8,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFF1F5F9),
                                         borderRadius: BorderRadius.circular(6),
@@ -116,23 +129,32 @@ class ReviewSessionCard extends StatelessWidget {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.schedule_rounded,
-                                              size: 14, color: AppTheme.primary),
+                                          const Icon(
+                                            Icons.schedule_rounded,
+                                            size: 14,
+                                            color: AppTheme.primary,
+                                          ),
                                           const SizedBox(width: 4),
-                                          Text(
-                                            session.timeLabel,
-                                            style: const TextStyle(
-                                              color: AppTheme.darkGray,
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w600,
+                                          Expanded(
+                                            child: Text(
+                                              session.timeLabel,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: AppTheme.darkGray,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFF1F5F9),
                                         borderRadius: BorderRadius.circular(6),
@@ -140,8 +162,11 @@ class ReviewSessionCard extends StatelessWidget {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.meeting_room_rounded,
-                                              size: 14, color: AppTheme.accent),
+                                          const Icon(
+                                            Icons.meeting_room_rounded,
+                                            size: 14,
+                                            color: AppTheme.accent,
+                                          ),
                                           const SizedBox(width: 4),
                                           Text(
                                             session.room ?? '—',
@@ -159,7 +184,7 @@ class ReviewSessionCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (trailing != null) trailing!,
+                          ?trailing,
                         ],
                       ),
                     ),
@@ -205,7 +230,7 @@ class _StatusBadge extends StatelessWidget {
                       BoxShadow(
                         color: AppTheme.white.withValues(alpha: 0.8),
                         blurRadius: 3,
-                      )
+                      ),
                     ]
                   : null,
             ),

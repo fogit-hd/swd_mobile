@@ -23,8 +23,7 @@ class ReviewSubmissionScreen extends StatefulWidget {
   final String sessionTitle;
 
   @override
-  State<ReviewSubmissionScreen> createState() =>
-      _ReviewSubmissionScreenState();
+  State<ReviewSubmissionScreen> createState() => _ReviewSubmissionScreenState();
 }
 
 class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
@@ -76,8 +75,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
 
     try {
       final auth = AuthScope.of(context);
-      final submission = await ReviewService(ApiClient(auth))
-          .fetchSubmission(widget.submissionId);
+      final submission = await ReviewService(
+        ApiClient(auth),
+      ).fetchSubmission(widget.submissionId);
       if (!mounted) return;
       _bindSubmission(submission);
       setState(() => _loading = false);
@@ -102,14 +102,14 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     _resultTextController.text = submission.resultText ?? '';
     _workVersionController.text = submission.workProductVersion ?? '';
     _workSizeController.text = submission.workProductSize ?? '';
-    _effortController.text =
-        submission.effortHours?.toString() ?? '';
+    _effortController.text = submission.effortHours?.toString() ?? '';
 
     for (final item in submission.items) {
       final key = item.itemKey;
       if (key != null && !item.isSection) {
-        _itemCommentControllers[key] =
-            TextEditingController(text: item.comment ?? '');
+        _itemCommentControllers[key] = TextEditingController(
+          text: item.comment ?? '',
+        );
       }
     }
   }
@@ -122,9 +122,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     final items = submission.items.map((item) {
       final key = item.itemKey;
       if (item.isSection || key == null) return item;
-      return item.copyWith(
-        comment: _itemCommentControllers[key]?.text.trim(),
-      );
+      return item.copyWith(comment: _itemCommentControllers[key]?.text.trim());
     }).toList();
 
     return submission.copyWith(
@@ -142,15 +140,14 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     setState(() => _saving = true);
     try {
       final auth = AuthScope.of(context);
-      final updated = await ReviewService(ApiClient(auth)).saveDraft(
-        widget.submissionId,
-        _buildDraft(),
-      );
+      final updated = await ReviewService(
+        ApiClient(auth),
+      ).saveDraft(widget.submissionId, _buildDraft());
       if (!mounted) return;
       _bindSubmission(updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu nháp')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã lưu nháp')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,16 +159,41 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   }
 
   Future<void> _submit() async {
+    final draft = _buildDraft();
+    final unansweredCount = draft.items
+        .where((item) => !item.isSection && item.answer == null)
+        .length;
+    if (unansweredCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Vui lòng trả lời đủ checklist ($unansweredCount mục chưa chọn).',
+          ),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+    if (draft.reviewerComment?.trim().isEmpty ?? true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập nhận xét chung trước khi gửi.'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final auth = AuthScope.of(context);
       final service = ReviewService(ApiClient(auth));
-      await service.saveDraft(widget.submissionId, _buildDraft());
+      await service.saveDraft(widget.submissionId, draft);
       await service.submitReview(widget.submissionId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã gửi nhận xét review')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã gửi nhận xét review')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -200,10 +222,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     try {
       final auth = AuthScope.of(context);
       final draft = _buildDraft();
-      final ai = await AiSuggestionService(ApiClient(auth)).generateFromSubmission(
-        draft,
-        fallbackProjectName: widget.sessionTitle,
-      );
+      final ai = await AiSuggestionService(
+        ApiClient(auth),
+      ).generateFromSubmission(draft, fallbackProjectName: widget.sessionTitle);
       if (!mounted) return;
       if (ai == null || ai.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -224,11 +245,6 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       if (ai.improvementSummary.isNotEmpty) {
         _suggestionController.text = ai.improvementSummary;
       }
-      if (ai.strengthsSummary.isNotEmpty &&
-          _resultTextController.text.trim().isEmpty) {
-        _resultTextController.text = ai.strengthsSummary;
-      }
-
       setState(() {
         _commentExpanded = true;
         _suggestionExpanded = true;
@@ -238,9 +254,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       );
     } on AiSuggestionException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +278,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.sessionTitle)),
-        body: const AppLoadingIndicator(message: 'Đang tải tiêu chí chấm...'),
+        body: const AppLoadingIndicator(message: 'Đang tải tiêu chí review...'),
       );
     }
 
@@ -276,7 +292,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chấm review · ${widget.sessionTitle}'),
+        title: Text('Nhận xét review · ${widget.sessionTitle}'),
         actions: [
           if (submission.groupId > 0)
             IconButton(
@@ -288,8 +304,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                   MaterialPageRoute<void>(
                     builder: (_) => LecturerGroupDocumentsScreen(
                       groupId: submission.groupId,
-                      groupCode:
-                          submission.groupCode ?? submission.projectName,
+                      groupCode: submission.groupCode ?? submission.projectName,
                     ),
                   ),
                 );
@@ -314,14 +329,15 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 : () async {
                     try {
                       final auth = AuthScope.of(context);
-                      final file = await ReviewService(ApiClient(auth))
-                          .exportSubmissionXlsxToFile(widget.submissionId);
-                      final sizeKb =
-                          (await file.length() / 1024).toStringAsFixed(0);
+                      final file = await ReviewService(
+                        ApiClient(auth),
+                      ).exportSubmissionXlsxToFile(widget.submissionId);
+                      final sizeKb = (await file.length() / 1024)
+                          .toStringAsFixed(0);
                       if (!mounted) return;
                       await OpenFilex.open(file.path);
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(this.context).showSnackBar(
                         SnackBar(
                           content: Text(
                             'Đã xuất checklist Excel ($sizeKb KB). '
@@ -331,7 +347,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                       );
                     } catch (e) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(this.context).showSnackBar(
                         SnackBar(
                           content: Text(e.toString()),
                           backgroundColor: AppTheme.error,
@@ -432,7 +448,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
-                            children: ReviewChecklistAnswer.values.map((answer) {
+                            children: ReviewChecklistAnswer.values.map((
+                              answer,
+                            ) {
                               final selected = item.answer == answer;
                               return ChoiceChip(
                                 label: Text(answer.label),
@@ -469,8 +487,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                       ),
                     ),
                     TextButton.icon(
-                      onPressed:
-                          (_saving || _aiLoading) ? null : _applyAiSuggestion,
+                      onPressed: (_saving || _aiLoading)
+                          ? null
+                          : _applyAiSuggestion,
                       icon: _aiLoading
                           ? const SizedBox(
                               width: 16,
@@ -530,19 +549,16 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 // ── Phần giảng viên nhập ───────────────────────────────
                 const Text(
                   'Nhập của giảng viên',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Phần bạn tự ghi nhận kết quả / kết luận buổi review.',
+                  'Ghi chú kết luận của giảng viên sau buổi review, không phải điểm số.',
                   style: TextStyle(color: AppTheme.mediumGray, fontSize: 12),
                 ),
                 const SizedBox(height: 10),
                 _TextField(
-                  label: 'Kết quả (nhập tay nếu cần)',
+                  label: 'Ghi nhận cuối buổi (không bắt buộc)',
                   controller: _resultTextController,
                   maxLines: 4,
                 ),
@@ -752,10 +768,7 @@ class _LoadingPlaceholder extends StatelessWidget {
             Expanded(
               child: Text(
                 'Đang tạo gợi ý AI...',
-                style: TextStyle(
-                  color: AppTheme.mediumGray,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppTheme.mediumGray, fontSize: 13),
               ),
             ),
           ],

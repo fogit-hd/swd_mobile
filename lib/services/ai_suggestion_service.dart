@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/src/response.dart';
+import 'package:http/http.dart' show Response;
 
 import '../models/project_suggestion.dart';
 import '../models/review_submission.dart';

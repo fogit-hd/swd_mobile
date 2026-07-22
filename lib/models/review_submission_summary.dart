@@ -8,8 +8,7 @@ class ReviewSubmissionSummary {
     required this.groupId,
     this.reviewType,
     this.status,
-    this.result,
-    this.score,
+    this.reviewerName,
     this.notes,
     this.submittedAt,
   });
@@ -21,8 +20,7 @@ class ReviewSubmissionSummary {
       groupId: json['groupId'] as int? ?? 0,
       reviewType: json['reviewType'] as String?,
       status: json['status'] as String?,
-      result: json['result'] as String?,
-      score: json['score'] as String?,
+      reviewerName: json['reviewerName'] as String?,
       notes: json['notes'] as String?,
       submittedAt: json['submittedAt'] != null
           ? DateTime.tryParse(json['submittedAt'] as String)
@@ -35,8 +33,7 @@ class ReviewSubmissionSummary {
   final int groupId;
   final String? reviewType;
   final String? status;
-  final String? result;
-  final String? score;
+  final String? reviewerName;
   final String? notes;
   final DateTime? submittedAt;
 

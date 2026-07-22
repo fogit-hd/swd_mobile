@@ -1,4 +1,5 @@
 import '../utils/display_labels.dart';
+import '../utils/review_slot_schedule.dart';
 
 class ReviewSession {
   const ReviewSession({
@@ -53,10 +54,8 @@ class ReviewSession {
   final String? submissionStatus;
   final DateTime? lastSavedAt;
 
-  bool get isPublished =>
-      sessionStatus?.toLowerCase() == 'published';
-  bool get isSubmitted =>
-      submissionStatus?.toLowerCase() == 'submitted';
+  bool get isPublished => sessionStatus?.toLowerCase() == 'published';
+  bool get isSubmitted => submissionStatus?.toLowerCase() == 'submitted';
   bool get canEditReview => isPublished && !isSubmitted && submissionId > 0;
   bool get canViewResults => isSubmitted && submissionId > 0;
 
@@ -65,17 +64,11 @@ class ReviewSession {
   String get typeLabel => DisplayLabels.reviewType(type);
 
   String get timeLabel {
-    final date = sessionDate;
-    if (date == null) {
-      return slot != null ? 'Ca $slot' : '—';
-    }
-    final time =
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    return slot != null ? '$time • Ca $slot' : time;
+    return ReviewSlotSchedule.labelOf(slot);
   }
 
   String get statusLabel => DisplayLabels.reviewWorkflowStatus(
-        submissionStatus: submissionStatus,
-        sessionStatus: sessionStatus,
-      );
+    submissionStatus: submissionStatus,
+    sessionStatus: sessionStatus,
+  );
 }

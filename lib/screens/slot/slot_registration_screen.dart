@@ -11,6 +11,7 @@ import '../../widgets/review_context_bar.dart';
 import '../../widgets/ui/shimmer_loading.dart';
 import '../../widgets/ui/slot_registration_matrix.dart';
 import '../../widgets/ui/sticky_action_button.dart';
+import '../../utils/review_slot_schedule.dart';
 
 enum SlotRegistrationMode { lecturer, student }
 
@@ -25,6 +26,9 @@ class SlotRegistrationScreen extends StatefulWidget {
     this.onSubmit,
     this.externalLoading = false,
     this.showContextBar = false,
+    this.enabled = true,
+    this.isSubmitted = false,
+    this.roundStatusLabel,
   });
 
   final SlotRegistrationMode mode;
@@ -34,6 +38,9 @@ class SlotRegistrationScreen extends StatefulWidget {
   final Future<void> Function(Set<String> keys)? onSubmit;
   final bool externalLoading;
   final bool showContextBar;
+  final bool enabled;
+  final bool isSubmitted;
+  final String? roundStatusLabel;
 
   @override
   State<SlotRegistrationScreen> createState() => _SlotRegistrationScreenState();
@@ -51,6 +58,7 @@ class _LecturerSlotRegistrationScreenState
     extends State<LecturerSlotRegistrationScreen> {
   ReviewContext? _context;
   Set<String> _selected = {};
+  bool _isSubmitted = false;
   bool _loading = false;
   String? _error;
   bool _initialized = false;
@@ -73,6 +81,7 @@ class _LecturerSlotRegistrationScreenState
     if (auth.isDemoMode) {
       setState(() {
         _selected = Set.from(MockSampleData.preselectedSlotKeys);
+        _isSubmitted = false;
         _loading = false;
       });
       return;
@@ -85,14 +94,15 @@ class _LecturerSlotRegistrationScreenState
       _error = null;
     });
     try {
-      final week = await ReviewService(ApiClient(auth)).fetchAvailabilityWeek(
-        roundId: ctx.roundId,
-      );
+      final week = await ReviewService(
+        ApiClient(auth),
+      ).fetchAvailabilityWeek(roundId: ctx.roundId);
       if (!mounted) return;
       setState(() {
         _selected = week.slots
             .map((s) => SlotRegistrationMatrix.cellKey(s.dayOfWeek, s.slot))
             .toSet();
+        _isSubmitted = week.isSubmitted;
         _loading = false;
       });
     } catch (e) {
@@ -105,26 +115,23 @@ class _LecturerSlotRegistrationScreenState
   }
 
   List<AvailabilitySlot> _toSlots(Set<String> keys) => keys.map((k) {
-        final p = k.split('-');
-        return AvailabilitySlot(
-          dayOfWeek: int.parse(p[0]),
-          slot: int.parse(p[1]),
-        );
-      }).toList();
+    final p = k.split('-');
+    return AvailabilitySlot(dayOfWeek: int.parse(p[0]), slot: int.parse(p[1]));
+  }).toList();
 
-  Future<void> _save(Set<String> keys) async {
+  Future<bool> _persist(Set<String> keys) async {
     if (AuthScope.of(context).isDemoMode) {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('[Chế độ demo] Đã lưu đăng ký ca')),
+        const SnackBar(content: Text('[Chế độ demo] Đã lưu đăng ký Slot')),
       );
-      return;
+      return true;
     }
 
     final ctx = _context;
-    if (ctx == null) return;
+    if (ctx == null) return false;
     if (!ctx.round.isOpen) {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -134,41 +141,49 @@ class _LecturerSlotRegistrationScreenState
           backgroundColor: AppTheme.error,
         ),
       );
-      return;
+      return false;
     }
     setState(() => _loading = true);
     try {
       final auth = AuthScope.of(context);
-      await ReviewService(ApiClient(auth)).saveAvailabilityWeek(
-        roundId: ctx.roundId,
-        slots: _toSlots(keys),
-      );
-      if (!mounted) return;
+      final week = await ReviewService(
+        ApiClient(auth),
+      ).saveAvailabilityWeek(roundId: ctx.roundId, slots: _toSlots(keys));
+      if (!mounted) return false;
+      setState(() => _isSubmitted = week.isSubmitted);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu đăng ký ca')),
+        const SnackBar(content: Text('Đã lưu bản nháp đăng ký Slot')),
       );
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.error),
       );
+      return false;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  Future<void> _save(Set<String> keys) async {
+    await _persist(keys);
+  }
+
   Future<void> _submit(Set<String> keys) async {
-    await _save(keys);
+    final saved = await _persist(keys);
+    if (!saved) return;
     if (!mounted) return;
     final ctx = _context;
     if (ctx == null) return;
     final auth = AuthScope.of(context);
     setState(() => _loading = true);
     try {
-      await ReviewService(ApiClient(auth)).submitAvailabilityWeek(
-        roundId: ctx.roundId,
-      );
+      final week = await ReviewService(
+        ApiClient(auth),
+      ).submitAvailabilityWeek(roundId: ctx.roundId);
       if (!mounted) return;
+      setState(() => _isSubmitted = week.isSubmitted);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã gửi đăng ký cho phòng đào tạo')),
       );
@@ -188,10 +203,12 @@ class _LecturerSlotRegistrationScreenState
       final error = _error ?? 'Đã xảy ra lỗi';
       return Column(
         children: [
-          ReviewContextBar(onChanged: (c) {
-            setState(() => _context = c);
-            _load();
-          }),
+          ReviewContextBar(
+            onChanged: (c) {
+              setState(() => _context = c);
+              _load();
+            },
+          ),
           Expanded(
             child: Center(
               child: Column(
@@ -199,7 +216,10 @@ class _LecturerSlotRegistrationScreenState
                 children: [
                   Text(error, textAlign: TextAlign.center),
                   const SizedBox(height: AppSpacing.md),
-                  OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+                  OutlinedButton(
+                    onPressed: _load,
+                    child: const Text('Thử lại'),
+                  ),
                 ],
               ),
             ),
@@ -210,15 +230,20 @@ class _LecturerSlotRegistrationScreenState
 
     return Column(
       children: [
-        ReviewContextBar(onChanged: (c) {
-          setState(() => _context = c);
-          _load();
-        }),
+        ReviewContextBar(
+          onChanged: (c) {
+            setState(() => _context = c);
+            _load();
+          },
+        ),
         Expanded(
           child: SlotRegistrationScreen(
             mode: SlotRegistrationMode.lecturer,
             initialSelection: _selected,
             externalLoading: _loading,
+            enabled: _context?.round.isOpen ?? false,
+            isSubmitted: _isSubmitted,
+            roundStatusLabel: _context?.round.statusLabel,
             onSave: _save,
             onSubmit: _submit,
           ),
@@ -340,7 +365,9 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E40AF).withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFF1E40AF,
+                          ).withValues(alpha: 0.35),
                           blurRadius: 32,
                           offset: const Offset(0, 16),
                         ),
@@ -354,11 +381,16 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppTheme.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(50),
-                                border: Border.all(color: AppTheme.white.withValues(alpha: 0.25)),
+                                border: Border.all(
+                                  color: AppTheme.white.withValues(alpha: 0.25),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -369,7 +401,11 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                       color: Color(0xFFF59E0B),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.bolt_rounded, color: AppTheme.black, size: 12),
+                                    child: const Icon(
+                                      Icons.bolt_rounded,
+                                      color: AppTheme.black,
+                                      size: 12,
+                                    ),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -387,14 +423,25 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 7,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF06B6D4).withValues(alpha: 0.22),
+                                color: const Color(
+                                  0xFF06B6D4,
+                                ).withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(50),
-                                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF38BDF8,
+                                  ).withValues(alpha: 0.6),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
+                                    color: const Color(
+                                      0xFF06B6D4,
+                                    ).withValues(alpha: 0.3),
                                     blurRadius: 10,
                                   ),
                                 ],
@@ -412,7 +459,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Đã chọn: ${_selected.length} ca',
+                                    'Đã chọn: ${_selected.length} Slot',
                                     style: const TextStyle(
                                       color: Color(0xFF38BDF8),
                                       fontWeight: FontWeight.w800,
@@ -427,8 +474,8 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                         const SizedBox(height: 18),
                         Text(
                           widget.mode == SlotRegistrationMode.lecturer
-                              ? 'Đăng Ký Lịch Bảo Vệ & Chấm Điểm'
-                              : 'Đăng Ký Ca Review Nhóm Đồ Án',
+                              ? 'Đăng Ký Slot Review'
+                              : 'Đăng Ký Slot Review Nhóm',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -439,8 +486,8 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                         const SizedBox(height: 6),
                         Text(
                           widget.mode == SlotRegistrationMode.lecturer
-                              ? 'Vui lòng chọn các khung giờ bạn có thể tham gia chấm hội đồng. Lịch sẽ được tổng hợp tự động.'
-                              : 'Trưởng nhóm chọn 1 ca bảo vệ phù hợp với lịch trình của toàn bộ thành viên trong nhóm.',
+                              ? 'Chọn các Slot bạn có thể tham gia. Phòng Đào tạo sẽ dùng bản đã nộp để xếp lịch.'
+                              : 'Trưởng nhóm chọn Slot phù hợp với toàn bộ thành viên.',
                           style: TextStyle(
                             color: AppTheme.white.withValues(alpha: 0.85),
                             fontSize: 14,
@@ -454,13 +501,18 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                   const SizedBox(height: 24),
                   // Legend bar styled inside a sleek Glassmorphic/elevated pill container
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.white,
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                          color: const Color(
+                            0xFF0F172A,
+                          ).withValues(alpha: 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -469,17 +521,61 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildLegendDot(const Color(0xFFF1F5F9), 'Khả dụng', border: const Color(0xFFCBD5E1)),
+                        _buildLegendDot(
+                          const Color(0xFFF1F5F9),
+                          'Có thể chọn',
+                          border: const Color(0xFFCBD5E1),
+                        ),
                         _buildLegendDot(const Color(0xFF2563EB), 'Đang chọn'),
-                        _buildLegendDot(AppTheme.errorLight, 'Kín chỗ / Khóa', border: AppTheme.error.withValues(alpha: 0.4)),
+                        _buildLegendDot(
+                          AppTheme.errorLight,
+                          'Đã khóa',
+                          border: AppTheme.error.withValues(alpha: 0.4),
+                        ),
                       ],
                     ),
                   ),
                   // Maximize Breathing Room: Big gap pushing grid away from legends
                   const SizedBox(height: 26),
+                  Card(
+                    color: widget.isSubmitted
+                        ? AppTheme.statusActiveBg
+                        : const Color(0xFFFFFBEB),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Icon(
+                            widget.isSubmitted
+                                ? Icons.verified_outlined
+                                : Icons.edit_calendar_outlined,
+                            color: widget.isSubmitted
+                                ? AppTheme.success
+                                : const Color(0xFFD97706),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              widget.enabled
+                                  ? widget.isSubmitted
+                                        ? 'Đã nộp chính thức. Bạn có thể chỉnh sửa và nộp lại khi đợt còn mở.'
+                                        : 'Đang soạn bản đăng ký. ${ReviewSlotSchedule.lunchBreak}.'
+                                  : 'Đợt review đang ${widget.roundStatusLabel ?? 'đóng'} — chỉ được xem các Slot đã đăng ký.',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   SlotRegistrationMatrix(
                     selectedKeys: _selected,
-                    enabled: !saving,
+                    enabled: widget.enabled && !saving,
                     showOccupancy: widget.mode == SlotRegistrationMode.student,
                     occupancyMap: widget.occupancyMap,
                     onToggle: _toggle,
@@ -492,16 +588,22 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
               bottom: 0,
               child: StickyActionButton(
                 label: widget.mode == SlotRegistrationMode.lecturer
-                    ? 'Lưu đăng ký (${_selected.length} ca)'
+                    ? 'Lưu nháp (${_selected.length} Slot)'
                     : 'Xác nhận đăng ký',
                 loading: saving,
                 icon: Icons.save_outlined,
                 secondaryLabel: widget.mode == SlotRegistrationMode.lecturer
-                    ? 'Gửi cho phòng đào tạo'
+                    ? widget.isSubmitted
+                          ? 'Nộp lại'
+                          : 'Nộp chính thức'
                     : null,
-                onPressed: _selected.isEmpty || saving ? null : _handleSave,
+                onPressed: !widget.enabled || _selected.isEmpty || saving
+                    ? null
+                    : _handleSave,
                 onSecondaryPressed:
-                    _selected.isEmpty || saving ? null : _handleSubmit,
+                    !widget.enabled || _selected.isEmpty || saving
+                    ? null
+                    : _handleSubmit,
               ),
             ),
           ],

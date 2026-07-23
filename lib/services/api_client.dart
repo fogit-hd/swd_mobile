@@ -115,7 +115,10 @@ class ApiClient {
     if (response.statusCode >= 400) {
       String message = '$action thất bại (${response.statusCode})';
       if (response.statusCode == 403) {
-        message = 'Bạn không có quyền thực hiện thao tác này. (403) ';
+        // Verify access-code đôi khi trả `Forbid()` không kèm body message.
+        // Dùng message mặc định thân thiện để user hiểu nguyên nhân.
+        message =
+            'Bạn không có quyền truy cập buổi review này hoặc bạn chưa được phân công. (403)';
       }
       try {
         final body = jsonDecode(response.body);

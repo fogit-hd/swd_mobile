@@ -98,7 +98,29 @@ class _AccessCodeDialogState extends State<_AccessCodeDialog> {
       if (!mounted) return;
       setState(() {
         _verifying = false;
-        _error = e.message;
+        // Map theo từng case để user hiểu đúng nguyên nhân.
+        // - 400: BusinessRule (mã sai/ phòng chưa có mã/ ...).
+        // - 403: Không có quyền truy cập buổi review (không phải GV được phân công).
+        // - 404: Không tìm thấy phiên review.
+        // - Khác: fallback message từ BE.
+        switch (e.statusCode) {
+          case 403:
+            final base =
+                'Không có quyền truy cập buổi review này hoặc bạn chưa được phân công.';
+            // Nếu message từ BE đã rõ ràng hơn thì ghép thêm.
+            final detail = e.message.trim();
+            if (detail.isNotEmpty && detail != base && !detail.contains('(403)')) {
+              _error = '$base\n($detail)';
+            } else {
+              _error = base;
+            }
+            break;
+          case 404:
+            _error = 'Mã truy cập/phiên review không tồn tại.';
+            break;
+          default:
+            _error = e.message;
+        }
       });
     } catch (e) {
       if (!mounted) return;

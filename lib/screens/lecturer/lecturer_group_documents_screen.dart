@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 
 import '../../app/auth_scope.dart';
+import '../../models/document_inline_comment.dart';
 import '../../models/project_document.dart';
 import '../../models/project_suggestion.dart';
 import '../../services/api_client.dart';
@@ -46,20 +47,10 @@ class _LecturerGroupDocumentsScreenState
 
   Future<void> _load() async {
     final auth = AuthScope.of(context);
-    if (auth.isDemoMode) {
-      setState(() {
-        _docs = const [];
-        _loading = false;
-        _error = 'Chế độ demo — chưa có dữ liệu tài liệu thật.';
-      });
-      return;
-    }
-
     setState(() {
       _loading = true;
       _error = null;
     });
-
     try {
       final docs = await DocumentService(ApiClient(auth)).listByGroup(
         widget.groupId,
@@ -80,7 +71,6 @@ class _LecturerGroupDocumentsScreenState
 
   Future<void> _download(ProjectDocument doc) async {
     final auth = AuthScope.of(context);
-    if (auth.isDemoMode) return;
 
     setState(() => _downloadingId = doc.id);
     try {
@@ -116,7 +106,6 @@ class _LecturerGroupDocumentsScreenState
     }
 
     final auth = AuthScope.of(context);
-    if (auth.isDemoMode) return;
 
     setState(() => _analyzingId = doc.id);
     try {
@@ -329,12 +318,23 @@ class _LecturerGroupDocumentsScreenState
                       fontSize: 12,
                     ),
                   ),
+                  if (doc.uploadedByName?.trim().isNotEmpty == true) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Người nộp: ${doc.uploadedByName}',
+                      style: const TextStyle(
+                        color: AppTheme.mediumGray,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                   if (cachedAi != null) ...[
                     const SizedBox(height: 10),
                     AiSuggestionPopover(suggestion: cachedAi),
                   ],
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    spacing: 4,
                     children: [
                       TextButton.icon(
                         onPressed: downloading ? null : () => _download(doc),
@@ -347,7 +347,6 @@ class _LecturerGroupDocumentsScreenState
                             : const Icon(Icons.download_outlined, size: 18),
                         label: Text(downloading ? 'Đang tải...' : 'Tải xuống'),
                       ),
-                      const SizedBox(width: 4),
                       TextButton.icon(
                         onPressed: analyzing ? null : () => _analyze(doc),
                         icon: analyzing
@@ -361,6 +360,11 @@ class _LecturerGroupDocumentsScreenState
                           analyzing ? 'Đang phân tích...' : 'AI phân tích',
                         ),
                       ),
+                      TextButton.icon(
+                        onPressed: () => _openComments(doc),
+                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                        label: const Text('Bình luận'),
+                      ),
                     ],
                   ),
                 ],
@@ -368,6 +372,213 @@ class _LecturerGroupDocumentsScreenState
             ),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _openComments(ProjectDocument doc) async {
+    final auth = AuthScope.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => _DocumentCommentsSheet(
+        document: doc,
+        service: DocumentService(ApiClient(auth)),
+      ),
+    );
+  }
+}
+
+class _DocumentCommentsSheet extends StatefulWidget {
+  const _DocumentCommentsSheet({
+    required this.document,
+    required this.service,
+  });
+
+  final ProjectDocument document;
+  final DocumentService service;
+
+  @override
+  State<_DocumentCommentsSheet> createState() => _DocumentCommentsSheetState();
+}
+
+class _DocumentCommentsSheetState extends State<_DocumentCommentsSheet> {
+  final _contentController = TextEditingController();
+  final _referenceController = TextEditingController();
+  List<DocumentInlineComment> _comments = const [];
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    _referenceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final comments = await widget.service.listComments(widget.document.id);
+      if (!mounted) return;
+      setState(() {
+        _comments = comments;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _add() async {
+    final content = _contentController.text.trim();
+    if (content.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final created = await widget.service.addComment(
+        documentId: widget.document.id,
+        content: content,
+        reference: _referenceController.text.trim().isEmpty
+            ? null
+            : _referenceController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _comments = [created, ..._comments];
+        _contentController.clear();
+        _referenceController.clear();
+        _saving = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.error),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottom),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.72,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightGray,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            Text(
+              'Bình luận · ${widget.document.title}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _contentController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Nội dung bình luận',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _referenceController,
+              decoration: const InputDecoration(
+                labelText: 'Tham chiếu đoạn (tuỳ chọn)',
+                hintText: 'VD: mục 3.2 / trang 12',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                onPressed: _saving ? null : _add,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_outlined, size: 18),
+                label: const Text('Thêm bình luận'),
+              ),
+            ),
+            const Divider(height: 24),
+            Expanded(
+              child: _loading
+                  ? const AppLoadingIndicator(message: 'Đang tải bình luận...')
+                  : _error != null
+                      ? Center(child: Text(_error!))
+                      : _comments.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Chưa có bình luận.',
+                                style: TextStyle(color: AppTheme.mediumGray),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: _comments.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final c = _comments[index];
+                                return Card(
+                                  child: ListTile(
+                                    title: Text(
+                                      c.authorName ?? 'Giảng viên',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      [
+                                        c.content,
+                                        if (c.reference?.trim().isNotEmpty ==
+                                            true)
+                                          'Tham chiếu: ${c.reference}',
+                                        if (c.createdAt != null)
+                                          c.createdAt!.toLocal().toString(),
+                                      ].join('\n'),
+                                    ),
+                                    isThreeLine: true,
+                                  ),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        ),
       ),
     );
   }

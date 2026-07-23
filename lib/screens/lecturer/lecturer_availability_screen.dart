@@ -5,6 +5,7 @@ import '../../models/review_availability.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/review_slot_schedule.dart';
 import '../../widgets/app_loading.dart';
 import '../../widgets/review_context_bar.dart';
 import '../../widgets/week_slot_grid.dart';
@@ -60,13 +61,23 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
 
   void _toggleSlot(int dayOfWeek, int slot) {
     final entry = AvailabilitySlot(dayOfWeek: dayOfWeek, slot: slot);
-    setState(() {
-      if (_selectedSlots.contains(entry)) {
-        _selectedSlots.remove(entry);
-      } else {
-        _selectedSlots.add(entry);
-      }
-    });
+    if (_selectedSlots.contains(entry)) {
+      setState(() => _selectedSlots.remove(entry));
+      return;
+    }
+    if (_selectedSlots.length >= ReviewSlotSchedule.maxLecturerSelectedSlots) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Chỉ được chọn tối đa '
+            '${ReviewSlotSchedule.maxLecturerSelectedSlots} Slot.',
+          ),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+    setState(() => _selectedSlots.add(entry));
   }
 
   Future<void> _save() async {
@@ -175,7 +186,10 @@ class _LecturerAvailabilityScreenState extends State<LecturerAvailabilityScreen>
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text('Lưu nháp (${_selectedSlots.length} ca)'),
+                : Text(
+                    'Lưu nháp (${_selectedSlots.length}/'
+                    '${ReviewSlotSchedule.maxLecturerSelectedSlots} ca)',
+                  ),
           ),
         ),
         const SizedBox(height: 12),

@@ -9,6 +9,7 @@ import '../../widgets/animated_bottom_nav.dart';
 import '../../widgets/animated_shell_body.dart';
 import '../schedule/lecturer_schedule_list_screen.dart';
 import '../slot/slot_registration_screen.dart';
+import 'lecturer_notifications_screen.dart';
 import 'lecturer_review_projects_screen.dart';
 
 /// Shell chính Giảng viên — tập trung đầy đủ vào luồng review checkpoint.
@@ -106,14 +107,18 @@ class _LecturerShellState extends State<LecturerShell>
           ),
         ),
         actions: [
-          if (auth.isDemoMode)
-            const Padding(
-              padding: EdgeInsets.only(right: 4),
-              child: Chip(
-                label: Text('Chế độ demo', style: TextStyle(fontSize: 11)),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Thông báo',
+            onPressed: () {
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const LecturerNotificationsScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppTheme.primary),
             tooltip: 'Đăng xuất',

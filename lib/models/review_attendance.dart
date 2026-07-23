@@ -54,6 +54,7 @@ class AttendanceStudent {
     this.fullName,
     this.isPresent,
     this.note,
+    this.studentConfirmedAt,
   });
 
   factory AttendanceStudent.fromJson(Map<String, dynamic> json) {
@@ -63,6 +64,9 @@ class AttendanceStudent {
       fullName: json['fullName'] as String?,
       isPresent: json['isPresent'] as bool?,
       note: json['note'] as String?,
+      studentConfirmedAt: json['studentConfirmedAt'] != null
+          ? DateTime.tryParse(json['studentConfirmedAt'] as String)
+          : null,
     );
   }
 
@@ -71,6 +75,7 @@ class AttendanceStudent {
   final String? fullName;
   final bool? isPresent;
   final String? note;
+  final DateTime? studentConfirmedAt;
 
   Map<String, dynamic> toEntryJson() => {
         'studentId': studentId,

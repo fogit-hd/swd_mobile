@@ -179,7 +179,15 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
           );
         }),
         const Divider(height: 32),
-        _InfoBlock(title: 'Nhận xét chung', value: submission.reviewerComment),
+        if (submission.reviewerComments.isNotEmpty)
+          _InfoBlock(
+            title: 'Nhận xét của giảng viên',
+            value: submission.reviewerComments
+                .map((c) => '• $c')
+                .join('\n'),
+          )
+        else
+          _InfoBlock(title: 'Nhận xét chung', value: submission.reviewerComment),
         _InfoBlock(title: 'Gợi ý', value: submission.suggestion),
         _InfoBlock(title: 'Ghi nhận cuối buổi', value: submission.resultText),
       ],

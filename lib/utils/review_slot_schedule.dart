@@ -1,6 +1,14 @@
 class ReviewSlotSchedule {
   const ReviewSlotSchedule._();
 
+  /// Số ca trong một ngày (Slot 1–5).
+  static const slotsPerDay = 5;
+
+  /// Số ô tối đa Giảng viên được chọn mỗi đợt review.
+  /// (Sinh viên bắt buộc đúng 5 ô theo BE; Giảng viên BE chưa enforce,
+  /// mobile giới hạn để tránh đăng ký quá nhiều.)
+  static const maxLecturerSelectedSlots = 5;
+
   static const times = <int, String>{
     1: '07:30 – 09:30',
     2: '09:45 – 11:45',

@@ -42,6 +42,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   final _workSizeController = TextEditingController();
   final _effortController = TextEditingController();
   final Map<String, TextEditingController> _itemCommentControllers = {};
+  final List<TextEditingController> _extraCommentControllers = [];
 
   @override
   void dispose() {
@@ -52,6 +53,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     _workSizeController.dispose();
     _effortController.dispose();
     for (final controller in _itemCommentControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _extraCommentControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -95,9 +99,23 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       controller.dispose();
     }
     _itemCommentControllers.clear();
+    for (final controller in _extraCommentControllers) {
+      controller.dispose();
+    }
+    _extraCommentControllers.clear();
 
     _submission = submission;
-    _reviewerCommentController.text = submission.reviewerComment ?? '';
+    final comments = submission.reviewerComments.isNotEmpty
+        ? submission.reviewerComments
+        : [
+            if (submission.reviewerComment?.trim().isNotEmpty == true)
+              submission.reviewerComment!.trim(),
+          ];
+    _reviewerCommentController.text =
+        comments.isNotEmpty ? comments.first : '';
+    for (final extra in comments.skip(1)) {
+      _extraCommentControllers.add(TextEditingController(text: extra));
+    }
     _suggestionController.text = submission.suggestion ?? '';
     _resultTextController.text = submission.resultText ?? '';
     _workVersionController.text = submission.workProductVersion ?? '';
@@ -114,6 +132,14 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     }
   }
 
+  List<String> _collectReviewerComments() {
+    final values = <String>[
+      _reviewerCommentController.text.trim(),
+      ..._extraCommentControllers.map((c) => c.text.trim()),
+    ];
+    return values.where((v) => v.isNotEmpty).toList();
+  }
+
   ReviewSubmission _buildDraft() {
     final submission = _submission;
     if (submission == null) {
@@ -125,11 +151,13 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       return item.copyWith(comment: _itemCommentControllers[key]?.text.trim());
     }).toList();
 
+    final comments = _collectReviewerComments();
     return submission.copyWith(
       workProductVersion: _workVersionController.text.trim(),
       workProductSize: _workSizeController.text.trim(),
       effortHours: double.tryParse(_effortController.text.trim()),
-      reviewerComment: _reviewerCommentController.text.trim(),
+      reviewerComment: comments.isEmpty ? '' : comments.first,
+      reviewerComments: comments,
       suggestion: _suggestionController.text.trim(),
       resultText: _resultTextController.text.trim(),
       items: items,
@@ -177,7 +205,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     if (draft.reviewerComment?.trim().isEmpty ?? true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng nhập nhận xét chung trước khi gửi.'),
+          content: Text('Vui lòng nhập ít nhất một nhận xét trước khi gửi.'),
           backgroundColor: AppTheme.error,
         ),
       );
@@ -240,7 +268,15 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
         if (ai.strengthsSummary.isNotEmpty) 'Điểm mạnh: ${ai.strengthsSummary}',
       ];
       if (commentParts.isNotEmpty) {
-        _reviewerCommentController.text = commentParts.join('\n\n');
+        _reviewerCommentController.text = commentParts.first;
+        for (final controller in _extraCommentControllers) {
+          controller.dispose();
+        }
+        _extraCommentControllers
+          ..clear()
+          ..addAll(
+            commentParts.skip(1).map((text) => TextEditingController(text: text)),
+          );
       }
       if (ai.improvementSummary.isNotEmpty) {
         _suggestionController.text = ai.improvementSummary;
@@ -528,6 +564,52 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                             'Chưa có gợi ý. Nhấn «AI gợi ý» để tạo nhận xét.',
                         onToggleExpand: () => setState(
                           () => _commentExpanded = !_commentExpanded,
+                        ),
+                      ),
+                      ..._extraCommentControllers.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final controller = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: controller,
+                                  minLines: 2,
+                                  maxLines: 4,
+                                  decoration: InputDecoration(
+                                    labelText: 'Nhận xét thêm #${index + 2}',
+                                    alignLabelWithHint: true,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Xóa nhận xét',
+                                onPressed: () {
+                                  setState(() {
+                                    _extraCommentControllers.removeAt(index).dispose();
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _extraCommentControllers.add(
+                                TextEditingController(),
+                              );
+                            });
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Thêm nhận xét'),
                         ),
                       ),
                       const SizedBox(height: 10),

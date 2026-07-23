@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
-import '../data/mock_sample_data.dart';
 import '../models/auth_models.dart';
 import '../routes/app_routes.dart';
 
@@ -15,6 +14,7 @@ class AuthService extends ChangeNotifier {
   static const _keyAccess = 'auth_access_token';
   static const _keyRefresh = 'auth_refresh_token';
   static const _keyUsername = 'auth_username';
+  static const _legacyDemoToken = 'demo-mock-token';
 
   String? _accessToken;
   String? _refreshToken;
@@ -29,15 +29,17 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated =>
       _accessToken != null && _accessToken!.isNotEmpty;
 
-  bool get isDemoMode => _accessToken == MockSampleData.demoToken;
-
   String get homeRoute => AppRoutes.home;
 
-  /// Vào app với dữ liệu mẫu — không cần API.
-  void enterDemoMode() {
-    _accessToken = MockSampleData.demoToken;
-    _refreshToken = null;
-    _username = 'demo.lecturer';
+  /// Chỉ dùng trong widget/unit test — không phải demo data.
+  @visibleForTesting
+  void setSessionForTesting({
+    required String accessToken,
+    String? username,
+  }) {
+    _accessToken = accessToken;
+    _username = username;
+    _restored = true;
     notifyListeners();
   }
 
@@ -47,7 +49,12 @@ class AuthService extends ChangeNotifier {
     final refresh = prefs.getString(_keyRefresh);
     final username = prefs.getString(_keyUsername);
 
-    if (access != null && access.isNotEmpty) {
+    // Xóa phiên demo cũ nếu còn lưu trên máy.
+    if (access == _legacyDemoToken) {
+      await prefs.remove(_keyAccess);
+      await prefs.remove(_keyRefresh);
+      await prefs.remove(_keyUsername);
+    } else if (access != null && access.isNotEmpty) {
       _accessToken = access;
       _refreshToken = refresh;
       _username = username;
@@ -94,7 +101,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshAccessToken() async {
+  Future<void> refreshAccessToken({bool notify = true}) async {
     if (_refreshToken == null || _refreshToken!.isEmpty) {
       throw AuthException('Không có refresh token.');
     }
@@ -120,7 +127,8 @@ class AuthService extends ChangeNotifier {
     _accessToken = token.accessToken;
     _refreshToken = token.refreshToken ?? _refreshToken;
     await _persist();
-    notifyListeners();
+    // Silent refresh trong ApiClient: không rebuild AuthRoot/dialog đang mở.
+    if (notify) notifyListeners();
   }
 
   Future<void> logout() async {
@@ -135,7 +143,6 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    if (isDemoMode) return;
     final prefs = await SharedPreferences.getInstance();
     if (_accessToken != null) {
       await prefs.setString(_keyAccess, _accessToken!);

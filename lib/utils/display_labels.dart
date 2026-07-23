@@ -99,17 +99,19 @@ abstract final class DisplayLabels {
     }
   }
 
-  static String defenseScoreType(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return 'Điểm';
+  static String notificationType(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return 'Thông báo';
     switch (raw.trim().toLowerCase()) {
-      case 'baove':
-      case 'bao_ve':
-      case 'defense':
-        return 'Bảo vệ';
-      case 'nguoi':
-      case 'individual':
-      case 'member':
-        return 'Cá nhân';
+      case 'docstatuschange':
+        return 'Tài liệu thay đổi trạng thái';
+      case 'newcomment':
+        return 'Bình luận mới';
+      case 'reportdone':
+        return 'Báo cáo đã xong';
+      case 'scorelocked':
+        return 'Điểm đã khóa';
+      case 'reviewschedulepublished':
+        return 'Lịch review đã công bố';
       default:
         return raw;
     }

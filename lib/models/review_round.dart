@@ -7,6 +7,7 @@ class ReviewRound {
     required this.semesterId,
     this.type,
     this.status,
+    this.registrationEndDate,
     this.weekStartDate,
     this.weekEndDate,
     this.openedAt,
@@ -20,6 +21,7 @@ class ReviewRound {
       semesterId: json['semesterId'] as int? ?? 0,
       type: json['type'] as String?,
       status: json['status'] as String?,
+      registrationEndDate: json['registrationEndDate']?.toString(),
       weekStartDate: json['weekStartDate']?.toString(),
       weekEndDate: json['weekEndDate']?.toString(),
       openedAt: json['openedAt'] != null
@@ -36,6 +38,7 @@ class ReviewRound {
   final int semesterId;
   final String? type;
   final String? status;
+  final String? registrationEndDate;
   final String? weekStartDate;
   final String? weekEndDate;
   final DateTime? openedAt;
@@ -52,7 +55,10 @@ class ReviewRound {
 
   String get displayName {
     final week = weekStartDate ?? '—';
-    return '$typeLabel · tuần $week';
+    final registrationLabel = registrationEndDate?.trim().isNotEmpty == true
+        ? ' · hết hạn $registrationEndDate'
+        : '';
+    return '$typeLabel · tuần $week$registrationLabel';
   }
 
   @override

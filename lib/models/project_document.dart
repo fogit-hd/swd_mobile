@@ -12,6 +12,7 @@ class ProjectDocument {
     this.status,
     this.uploadedAt,
     this.uploadedById,
+    this.uploadedByName,
   });
 
   factory ProjectDocument.fromJson(Map<String, dynamic> json) {
@@ -27,6 +28,7 @@ class ProjectDocument {
           ? DateTime.tryParse(json['uploadedAt'] as String)
           : null,
       uploadedById: json['uploadedById'] as int?,
+      uploadedByName: json['uploadedByName'] as String?,
     );
   }
 
@@ -39,6 +41,7 @@ class ProjectDocument {
   final String? status;
   final DateTime? uploadedAt;
   final int? uploadedById;
+  final String? uploadedByName;
 
   String get title => fileName ?? 'Tài liệu #$id';
 

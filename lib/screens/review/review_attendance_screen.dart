@@ -70,6 +70,7 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
       fullName: s.fullName,
       isPresent: value ?? false,
       note: s.note,
+      studentConfirmedAt: s.studentConfirmedAt,
     );
     setState(() {
       _data = ReviewAttendanceList(
@@ -192,15 +193,21 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
         const SizedBox(height: 16),
         ...List.generate(data.students.length, (i) {
           final s = data.students[i];
-          return Card(
-            child: CheckboxListTile(
-              title: Text(s.fullName ?? s.studentCode ?? '—'),
-              subtitle: Text(s.studentCode ?? ''),
-              value: s.isPresent ?? false,
-              tristate: true,
-              onChanged: _saving ? null : (v) => _togglePresent(i, v),
-            ),
-          );
+            return Card(
+              child: CheckboxListTile(
+                title: Text(s.fullName ?? s.studentCode ?? '—'),
+                subtitle: Text(
+                  [
+                    if (s.studentCode != null) s.studentCode!,
+                    if (s.studentConfirmedAt != null)
+                      'SV đã xác nhận lúc ${s.studentConfirmedAt!.toLocal()}',
+                  ].join(' · '),
+                ),
+                value: s.isPresent ?? false,
+                tristate: true,
+                onChanged: _saving ? null : (v) => _togglePresent(i, v),
+              ),
+            );
         }),
         const SizedBox(height: 80),
       ],

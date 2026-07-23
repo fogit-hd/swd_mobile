@@ -28,36 +28,43 @@ class _CapstoneEvalAppState extends State<CapstoneEvalApp> {
 
   @override
   Widget build(BuildContext context) {
+    // MaterialApp phải ổn định — không recreate mỗi lần auth notify
+    // (tránh InheritedWidget dispose khi còn dependents).
     return AuthScope(
       authService: _authService,
-      child: ListenableBuilder(
-        listenable: _authService,
-        builder: (context, _) {
-          if (!_authService.isRestored) {
-            return const MaterialApp(
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(body: Center(child: CircularProgressIndicator())),
-            );
-          }
-
-          final startScreen = _authService.isAuthenticated
-              ? const LecturerShell()
-              : const LoginScreen();
-
-          return MaterialApp(
-            title: 'CPM System',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.theme,
-            home: startScreen,
-            routes: {
-              AppRoutes.login: (_) => const LoginScreen(),
-              AppRoutes.home: (_) => const LecturerShell(),
-            },
-            onUnknownRoute: (settings) =>
-                MaterialPageRoute<void>(builder: (_) => startScreen),
-          );
+      child: MaterialApp(
+        title: 'CPM System',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.theme,
+        home: const _AuthRoot(),
+        routes: {
+          AppRoutes.login: (_) => const LoginScreen(),
+          AppRoutes.home: (_) => const LecturerShell(),
         },
+        onUnknownRoute: (settings) => MaterialPageRoute<void>(
+          builder: (_) => const _AuthRoot(),
+          settings: settings,
+        ),
       ),
     );
+  }
+}
+
+/// Gate đăng nhập — rebuild qua AuthScope (InheritedNotifier), không thay MaterialApp.
+class _AuthRoot extends StatelessWidget {
+  const _AuthRoot();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthScope.of(context);
+    if (!auth.isRestored) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (auth.isAuthenticated) {
+      return const LecturerShell();
+    }
+    return const LoginScreen();
   }
 }

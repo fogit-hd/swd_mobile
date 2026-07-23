@@ -14,8 +14,11 @@ class ReviewSession {
     this.sessionDate,
     this.slot,
     this.room,
+    this.reviewerCount,
     this.submissionStatus,
     this.lastSavedAt,
+    this.hasAccessCode = false,
+    this.isAccessVerified = false,
   });
 
   factory ReviewSession.fromJson(Map<String, dynamic> json) {
@@ -33,10 +36,13 @@ class ReviewSession {
           : null,
       slot: json['slot'] as int?,
       room: json['room'] as String?,
+      reviewerCount: json['reviewerCount'] as int?,
       submissionStatus: json['submissionStatus'] as String?,
       lastSavedAt: json['lastSavedAt'] != null
           ? DateTime.tryParse(json['lastSavedAt'] as String)
           : null,
+      hasAccessCode: json['hasAccessCode'] as bool? ?? false,
+      isAccessVerified: json['isAccessVerified'] as bool? ?? false,
     );
   }
 
@@ -51,12 +57,17 @@ class ReviewSession {
   final DateTime? sessionDate;
   final int? slot;
   final String? room;
+  final int? reviewerCount;
   final String? submissionStatus;
   final DateTime? lastSavedAt;
+  final bool hasAccessCode;
+  final bool isAccessVerified;
 
   bool get isPublished => sessionStatus?.toLowerCase() == 'published';
   bool get isSubmitted => submissionStatus?.toLowerCase() == 'submitted';
-  bool get canEditReview => isPublished && !isSubmitted && submissionId > 0;
+  bool get isAccessReady => !hasAccessCode || isAccessVerified;
+  bool get canEditReview =>
+      isPublished && isAccessReady && !isSubmitted && submissionId > 0;
   bool get canViewResults => isSubmitted && submissionId > 0;
 
   String get title => groupCode ?? code ?? 'Phiên review #$sessionId';
@@ -71,4 +82,28 @@ class ReviewSession {
     submissionStatus: submissionStatus,
     sessionStatus: sessionStatus,
   );
+
+  ReviewSession copyWith({
+    bool? isAccessVerified,
+    bool? hasAccessCode,
+  }) {
+    return ReviewSession(
+      sessionId: sessionId,
+      submissionId: submissionId,
+      code: code,
+      type: type,
+      sessionStatus: sessionStatus,
+      groupId: groupId,
+      groupCode: groupCode,
+      topicName: topicName,
+      sessionDate: sessionDate,
+      slot: slot,
+      room: room,
+      reviewerCount: reviewerCount,
+      submissionStatus: submissionStatus,
+      lastSavedAt: lastSavedAt,
+      hasAccessCode: hasAccessCode ?? this.hasAccessCode,
+      isAccessVerified: isAccessVerified ?? this.isAccessVerified,
+    );
+  }
 }

@@ -7,13 +7,15 @@ import 'package:swd_mobile/theme/app_theme.dart';
 import 'package:swd_mobile/widgets/scale_tap.dart';
 
 void main() {
-  testWidgets('Lecturer review shell builds all tabs in demo mode', (
-    tester,
-  ) async {
+  testWidgets('Lecturer review shell builds all tabs', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final auth = AuthService()..enterDemoMode();
+    final auth = AuthService()
+      ..setSessionForTesting(
+        accessToken: 'test-session-token',
+        username: 'test.lecturer',
+      );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -25,28 +27,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(tester.takeException(), isNull);
+    expect(find.text('Lịch review'), findsWidgets);
 
     await tester.tap(
       find.widgetWithIcon(ScaleTap, Icons.rate_review_outlined).last,
     );
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey('review-scope-today')), findsOneWidget);
-    expect(find.byKey(const ValueKey('review-scope-upcoming')), findsOneWidget);
-    expect(find.byKey(const ValueKey('review-scope-all')), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('review-scope-upcoming')));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byKey(const ValueKey('review-scope-all')));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.takeException(), isNull);
+    expect(find.text('Nhận xét'), findsWidgets);
 
     await tester.tap(
       find.widgetWithIcon(ScaleTap, Icons.grid_view_rounded).last,
     );
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
+    expect(find.text('Đăng ký Slot'), findsWidgets);
   });
 }

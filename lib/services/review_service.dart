@@ -26,6 +26,15 @@ class ReviewService {
         .toList();
   }
 
+  /// Trạng thái mã truy cập mới nhất từ BE (sau khi verify trên web/mobile khác).
+  Future<ReviewSession?> fetchSessionAccessStatus(int sessionId) async {
+    final sessions = await fetchMySessions();
+    for (final session in sessions) {
+      if (session.sessionId == sessionId) return session;
+    }
+    return null;
+  }
+
   /// Danh sách nhận xét mà giảng viên đã lưu hoặc gửi.
   Future<List<ReviewSubmissionSummary>> fetchMySubmissions() async {
     final response = await _client.get('/api/review-submissions/my');
@@ -132,6 +141,18 @@ class ReviewService {
 
   Future<List<int>> exportSubmissionXlsx(int submissionId) =>
       _client.download('/api/review-submissions/$submissionId/export.xlsx');
+
+  Future<void> verifySessionAccessCode({
+    required int sessionId,
+    required String accessCode,
+  }) async {
+    final normalized = accessCode.trim().toUpperCase();
+    final response = await _client.post(
+      '/api/review-sessions/$sessionId/access-code/verify',
+      body: {'accessCode': normalized},
+    );
+    _client.throwIfFailed(response, 'Xác thực mã truy cập');
+  }
 
   /// Xuất checklist review ra file Excel tạm trên máy (không phải tài liệu nhóm).
   Future<File> exportSubmissionXlsxToFile(int submissionId) async {

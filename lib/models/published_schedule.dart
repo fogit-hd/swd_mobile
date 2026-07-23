@@ -63,6 +63,8 @@ class LecturerReviewGroup {
     this.sessionId,
     this.groupId,
     this.submissionId,
+    this.hasAccessCode = false,
+    this.isAccessVerified = false,
   });
 
   final String groupCode;
@@ -71,6 +73,8 @@ class LecturerReviewGroup {
   final int? sessionId;
   final int? groupId;
   final int? submissionId;
+  final bool hasAccessCode;
+  final bool isAccessVerified;
 }
 
 enum ProjectScheduleStatus {

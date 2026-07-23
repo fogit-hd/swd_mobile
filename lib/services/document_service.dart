@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../models/document_inline_comment.dart';
 import '../models/project_document.dart';
 import '../models/project_suggestion.dart';
 import 'api_client.dart';
@@ -39,6 +40,38 @@ class DocumentService {
     final file = File('${dir.path}/${document.id}_$safeName');
     await file.writeAsBytes(bytes, flush: true);
     return file;
+  }
+
+  Future<List<DocumentInlineComment>> listComments(int documentId) async {
+    final response = await _client.get('/api/documents/$documentId/comments');
+    _client.throwIfFailed(response, 'Tải bình luận tài liệu');
+
+    final list = jsonDecode(response.body) as List<dynamic>;
+    return list
+        .map((e) => DocumentInlineComment.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<DocumentInlineComment> addComment({
+    required int documentId,
+    required String content,
+    String? reference,
+    int? paragraphIndex,
+  }) async {
+    final response = await _client.post(
+      '/api/documents/$documentId/comments',
+      body: {
+        'content': content.trim(),
+        if (reference != null && reference.trim().isNotEmpty)
+          'reference': reference.trim(),
+        if (paragraphIndex != null) 'paragraphIndex': paragraphIndex,
+      },
+    );
+    _client.throwIfFailed(response, 'Thêm bình luận tài liệu');
+
+    return DocumentInlineComment.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   /// POST /api/documents/{id}/suggestions — Lecturer only.

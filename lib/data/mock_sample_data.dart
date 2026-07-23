@@ -44,6 +44,7 @@ abstract final class MockSampleData {
         semesterId: 1,
         type: 'Review2',
         status: 'Open',
+        registrationEndDate: date(saturday),
         weekStartDate: date(monday),
         weekEndDate: date(saturday),
         registrationCount: 7,

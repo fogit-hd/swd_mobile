@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
-import '../../data/mock_sample_data.dart';
 import '../../models/project_review_status.dart';
 import '../../models/published_schedule.dart';
 import '../../models/review_session.dart';
@@ -16,6 +15,7 @@ import '../../utils/review_slot_schedule.dart';
 import '../../widgets/ui/edu_card.dart';
 import '../../widgets/ui/shimmer_loading.dart';
 import '../../widgets/ui/status_badge.dart';
+import '../../widgets/review_access_code_dialog.dart';
 import '../review/review_live_session_screen.dart';
 
 /// Danh sách slot Giảng viên phải đi chấm — tối đa 3 nhóm/slot, sắp theo thời gian.
@@ -28,11 +28,31 @@ class LecturerScheduleListScreen extends StatefulWidget {
 }
 
 class _LecturerScheduleListScreenState
-    extends State<LecturerScheduleListScreen> {
+    extends State<LecturerScheduleListScreen>
+    with WidgetsBindingObserver {
   List<LecturerReviewSlot>? _slots;
   bool _loading = true;
   String? _error;
   bool _loadStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _loadStarted && mounted) {
+      _load(silent: true);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -44,20 +64,13 @@ class _LecturerScheduleListScreenState
     });
   }
 
-  Future<void> _load() async {
-    final auth = AuthScope.of(context);
-    if (auth.isDemoMode) {
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
       setState(() {
-        _slots = _groupSessions(MockSampleData.lecturerSessions);
-        _loading = false;
+        _loading = true;
+        _error = null;
       });
-      return;
     }
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
     try {
       final auth = AuthScope.of(context);
       final sessions = await ReviewService(ApiClient(auth)).fetchMySessions();
@@ -65,9 +78,11 @@ class _LecturerScheduleListScreenState
       setState(() {
         _slots = _groupSessions(sessions);
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
+      if (silent) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -122,6 +137,8 @@ class _LecturerScheduleListScreenState
                 sessionId: s.sessionId,
                 groupId: s.groupId,
                 submissionId: s.submissionId,
+                hasAccessCode: s.hasAccessCode,
+                isAccessVerified: s.isAccessVerified,
               ),
             )
             .toList(),
@@ -137,10 +154,20 @@ class _LecturerScheduleListScreenState
 
   String _reviewTypeLabel(String? type) => DisplayLabels.reviewType(type);
 
-  void _openGroup(LecturerReviewGroup group) {
+  Future<void> _openGroup(LecturerReviewGroup group) async {
     final sessionId = group.sessionId;
     if (sessionId == null) return;
-    Navigator.push<void>(
+
+    final unlocked = await ensureReviewSessionAccess(
+      context: context,
+      sessionId: sessionId,
+      hasAccessCode: group.hasAccessCode,
+      isAccessVerified: group.isAccessVerified,
+      sessionTitle: group.groupCode,
+    );
+    if (!unlocked || !mounted) return;
+
+    await Navigator.push<void>(
       context,
       AppAnimations.fadeSlideRoute(
         ReviewLiveSessionScreen(
@@ -151,7 +178,8 @@ class _LecturerScheduleListScreenState
           initialStatus: _statusOf(group.status),
         ),
       ),
-    ).then((_) => _load());
+    );
+    if (mounted) _load();
   }
 
   @override
@@ -322,6 +350,24 @@ class _LecturerScheduleListScreenState
                                                           AppTheme.mediumGray,
                                                     ),
                                                   ),
+                                                  if (g.hasAccessCode) ...[
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      g.isAccessVerified
+                                                          ? 'Đã mở khóa'
+                                                          : 'Cần mã truy cập',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: g.isAccessVerified
+                                                            ? AppTheme.success
+                                                            : const Color(
+                                                                0xFFD97706,
+                                                              ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
                                             ),

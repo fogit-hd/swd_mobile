@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app/auth_scope.dart';
-import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../theme/app_animations.dart';
 import '../theme/app_theme.dart';
@@ -20,7 +19,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
-  static const _enableDemoMode = bool.fromEnvironment('ENABLE_DEMO_MODE');
   static const _enableQuickLogin = bool.fromEnvironment(
     'ENABLE_LECTURER_QUICK_LOGIN',
   );
@@ -143,8 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       await auth.login(username: username, password: password);
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      // AuthRoot (home) tự chuyển sang LecturerShell khi auth notify.
     } on AuthException catch (e) {
       _showError(e.message);
     } catch (_) {
@@ -152,12 +149,6 @@ class _LoginScreenState extends State<LoginScreen>
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _enterDemoMode() {
-    final auth = AuthScope.of(context);
-    auth.enterDemoMode();
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   void _showError(String message) {
@@ -466,14 +457,6 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
                                 ],
-                                if (_enableDemoMode) ...[
-                                  const SizedBox(height: 12),
-                                  OutlinedButton.icon(
-                                    onPressed: _loading ? null : _enterDemoMode,
-                                    icon: const Icon(Icons.science_outlined),
-                                    label: const Text('Xem demo Lecturer'),
-                                  ),
-                                ],
                               ],
                             ),
                           ),
@@ -740,6 +723,9 @@ class _QuantumHaloPainter extends CustomPainter {
 }
 
 void logout(BuildContext context) {
+  // Đóng mọi route đã push (thông báo, chi tiết…) trước khi clear session,
+  // rồi để AuthRoot đổi về LoginScreen — không recreate MaterialApp.
+  final navigator = Navigator.of(context);
+  navigator.popUntil((route) => route.isFirst);
   AuthScope.of(context).logout();
-  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
 }

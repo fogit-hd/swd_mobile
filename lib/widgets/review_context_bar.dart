@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../app/auth_scope.dart';
-import '../data/mock_sample_data.dart';
 import '../models/review_round.dart';
 import '../models/semester.dart';
 import '../services/api_client.dart';
@@ -49,27 +48,6 @@ class ReviewContextBarState extends State<ReviewContextBar> {
   Future<void> _loadSemesters() async {
     try {
       final auth = AuthScope.of(context);
-      if (auth.isDemoMode) {
-        final semesters = MockSampleData.semesters;
-        final rounds = MockSampleData.reviewRounds;
-        final selectedSemester = semesters.isNotEmpty ? semesters.first : null;
-        final selectedRound = rounds.isNotEmpty ? rounds.first : null;
-        if (!mounted) return;
-        setState(() {
-          _semesters = semesters;
-          _semester = selectedSemester;
-          _rounds = rounds;
-          _round = selectedRound;
-          _loading = false;
-        });
-        if (selectedSemester != null && selectedRound != null) {
-          widget.onChanged(
-            ReviewContext(semester: selectedSemester, round: selectedRound),
-          );
-        }
-        return;
-      }
-
       final semesters = await SemesterService(ApiClient(auth)).fetchSemesters();
       if (!mounted) return;
       Semester? active;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
-import '../../data/mock_sample_data.dart';
 import '../../models/project_review_status.dart';
 import '../../models/review_session.dart';
 import '../../models/review_submission_summary.dart';
@@ -11,6 +10,7 @@ import '../../theme/app_animations.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/review_schedule_filter.dart';
 import '../../widgets/app_loading.dart';
+import '../../widgets/review_access_code_dialog.dart';
 import '../../widgets/review_session_card.dart';
 import 'review_live_session_screen.dart';
 import 'review_results_screen.dart';
@@ -38,13 +38,33 @@ class ReviewSessionsScreen extends StatefulWidget {
   State<ReviewSessionsScreen> createState() => _ReviewSessionsScreenState();
 }
 
-class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
+class _ReviewSessionsScreenState extends State<ReviewSessionsScreen>
+    with WidgetsBindingObserver {
   List<ReviewSession>? _sessions;
   List<ReviewSubmissionSummary> _submissions = const [];
   bool _loading = true;
   String? _error;
   bool _loadStarted = false;
   ReviewScheduleScope _scope = ReviewScheduleScope.today;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _loadStarted && mounted) {
+      _load(silent: true);
+    }
+  }
 
   DateTime _dateOnly(DateTime value) {
     final local = value.toLocal();
@@ -146,24 +166,16 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
     });
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final auth = AuthScope.of(context);
-      if (auth.isDemoMode) {
-        if (!mounted) return;
-        setState(() {
-          _sessions = MockSampleData.lecturerSessions;
-          _submissions = const [];
-          _loading = false;
-        });
-        return;
-      }
-
       final service = ReviewService(ApiClient(auth));
       final sessions = await service.fetchMySessions();
       List<ReviewSubmissionSummary> submissions = const [];
@@ -177,9 +189,11 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
         _sessions = sessions;
         _submissions = submissions;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
+      if (silent) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -196,15 +210,62 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
     return null;
   }
 
-  void _openSession(ReviewSession session) {
+  Future<void> _openSession(ReviewSession session) async {
     if (widget.readOnly || session.canViewResults) {
-      Navigator.push<void>(
+      final unlocked = await ensureReviewSessionAccess(
+        context: context,
+        sessionId: session.sessionId,
+        hasAccessCode: session.hasAccessCode,
+        isAccessVerified: session.isAccessVerified,
+        sessionTitle: session.title,
+      );
+      if (!unlocked || !mounted) return;
+      await Navigator.push<void>(
         context,
         MaterialPageRoute<void>(
           builder: (_) =>
               ReviewResultsScreen(submissionId: session.submissionId),
         ),
       );
+      return;
+    }
+
+    if (session.hasAccessCode && !session.isAccessVerified) {
+      final unlocked = await ensureReviewSessionAccess(
+        context: context,
+        sessionId: session.sessionId,
+        hasAccessCode: session.hasAccessCode,
+        isAccessVerified: session.isAccessVerified,
+        sessionTitle: session.title,
+      );
+      if (!unlocked || !mounted) return;
+      await _load();
+      if (!mounted) return;
+      ReviewSession current = session.copyWith(isAccessVerified: true);
+      for (final s in _sessions ?? const <ReviewSession>[]) {
+        if (s.sessionId == session.sessionId) {
+          current = s;
+          break;
+        }
+      }
+      if (!current.canEditReview) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Phiên chưa công bố hoặc chưa sẵn sàng để review.'),
+          ),
+        );
+        return;
+      }
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => ReviewSubmissionScreen(
+            submissionId: current.submissionId,
+            sessionTitle: current.title,
+          ),
+        ),
+      );
+      if (mounted) _load();
       return;
     }
 
@@ -217,7 +278,7 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
       return;
     }
 
-    Navigator.push<void>(
+    await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
         builder: (_) => ReviewSubmissionScreen(
@@ -225,7 +286,36 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
           sessionTitle: session.title,
         ),
       ),
-    ).then((_) => _load());
+    );
+    if (mounted) _load();
+  }
+
+  Future<void> _openAttendance(ReviewSession session) async {
+    final unlocked = await ensureReviewSessionAccess(
+      context: context,
+      sessionId: session.sessionId,
+      hasAccessCode: session.hasAccessCode,
+      isAccessVerified: session.isAccessVerified,
+      sessionTitle: session.title,
+    );
+    if (!unlocked || !mounted) return;
+    await Navigator.push<void>(
+      context,
+      AppAnimations.fadeSlideRoute(
+        ReviewLiveSessionScreen(
+          sessionId: session.sessionId,
+          groupId: session.groupId,
+          groupCode: session.title,
+          submissionId: session.submissionId,
+          initialStatus: session.isSubmitted
+              ? ProjectReviewStatus.completed
+              : session.canEditReview
+              ? ProjectReviewStatus.inProgress
+              : ProjectReviewStatus.notStarted,
+        ),
+      ),
+    );
+    if (mounted) _load();
   }
 
   @override
@@ -435,22 +525,7 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
                             IconButton(
                               icon: const Icon(Icons.how_to_reg_outlined),
                               tooltip: 'Điểm danh',
-                              onPressed: () => Navigator.push<void>(
-                                context,
-                                AppAnimations.fadeSlideRoute(
-                                  ReviewLiveSessionScreen(
-                                    sessionId: session.sessionId,
-                                    groupId: session.groupId,
-                                    groupCode: session.title,
-                                    submissionId: session.submissionId,
-                                    initialStatus: session.isSubmitted
-                                        ? ProjectReviewStatus.completed
-                                        : session.canEditReview
-                                        ? ProjectReviewStatus.inProgress
-                                        : ProjectReviewStatus.notStarted,
-                                  ),
-                                ),
-                              ),
+                              onPressed: () => _openAttendance(session),
                             ),
                           const Icon(Icons.chevron_right),
                         ],

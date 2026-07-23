@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
-import '../../data/mock_sample_data.dart';
 import '../../models/project_review_status.dart';
 import '../../models/project_suggestion.dart';
 import '../../models/review_attendance.dart';
 import '../../services/api_client.dart';
 import '../../services/ai_suggestion_service.dart';
 import '../../services/review_attendance_service.dart';
+import '../../services/review_progress_hub_client.dart';
 import '../../services/review_service.dart';
 import '../../services/semester_service.dart';
 import '../../theme/app_spacing.dart';
@@ -58,9 +60,14 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
   String? _error;
   ProjectSuggestion? _aiSuggestion;
   int? _resolvedGroupId;
+  ReviewProgressHubClient? _progressHub;
+  StreamSubscription<ReviewComment>? _commentSub;
+  String? _realtimeStatus;
 
   @override
   void dispose() {
+    _commentSub?.cancel();
+    _progressHub?.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -129,25 +136,6 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
 
   Future<void> _load() async {
     final auth = AuthScope.of(context);
-    if (auth.isDemoMode) {
-      final absent = <int>{};
-      final data = MockSampleData.attendanceList;
-      for (final s in data.students) {
-        if (s.isPresent == false) absent.add(s.studentId);
-      }
-      setState(() {
-        _data = data;
-        _resolvedGroupId = data.groupId;
-        _groupStatus = widget.initialStatus ?? _groupStatus;
-        _absentIds
-          ..clear()
-          ..addAll(absent);
-        _aiSuggestion = widget.aiSummary ?? MockSampleData.aiSuggestion;
-        _loading = false;
-      });
-      return;
-    }
-
     setState(() {
       _loading = true;
       _error = null;
@@ -213,6 +201,10 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
           ..addAll(absent);
         _loading = false;
       });
+      await _connectProgressHub(
+        sessionId: widget.sessionId,
+        groupId: data.groupId > 0 ? data.groupId : groupId,
+      );
       // AI: non-blocking sau attendance — POST /api/project-suggestions/summary.
       _loadAiSuggestion(client);
     } catch (e) {
@@ -284,6 +276,35 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
 
     if (!mounted) return;
     setState(() => _aiSuggestion = null);
+  }
+
+  Future<void> _connectProgressHub({
+    required int sessionId,
+    required int groupId,
+  }) async {
+    final auth = AuthScope.of(context);
+    await _commentSub?.cancel();
+    await _progressHub?.dispose();
+    final hub = ReviewProgressHubClient(auth);
+    try {
+      await hub.connectAndJoin(sessionId: sessionId, groupId: groupId);
+      _commentSub = hub.onCommentAdded.listen((comment) {
+        if (!mounted) return;
+        setState(() {
+          _noteController.text = comment.content;
+          _realtimeStatus =
+              'Nhận xét realtime từ ${comment.authorName ?? 'giảng viên'}';
+        });
+      });
+      if (!mounted) return;
+      setState(() {
+        _progressHub = hub;
+        _realtimeStatus = 'Realtime nhận xét: đã kết nối';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _realtimeStatus = 'Realtime offline: $e');
+    }
   }
 
   /// E360: chạm tên SV → toggle vắng (nền đỏ nhạt).
@@ -558,6 +579,17 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
                   ),
                 ),
               ),
+            if (_realtimeStatus != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  _realtimeStatus!,
+                  style: const TextStyle(
+                    color: AppTheme.mediumGray,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
               onPressed: _openGroupDocuments,
@@ -596,7 +628,12 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
                         ),
                       ),
                     ),
-                    label: Text(s.fullName ?? s.studentCode ?? '—'),
+                    label: Text(
+                      [
+                        s.fullName ?? s.studentCode ?? '—',
+                        if (s.studentConfirmedAt != null) '✓ SV',
+                      ].join(' '),
+                    ),
                     backgroundColor: absent
                         ? AppTheme.errorLight
                         : AppTheme.white,

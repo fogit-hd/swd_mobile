@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
-import '../../data/mock_sample_data.dart';
 import '../../models/review_availability.dart';
 import '../../services/api_client.dart';
 import '../../services/review_service.dart';
@@ -63,36 +62,11 @@ class _LecturerSlotRegistrationScreenState
   bool _isSubmitted = false;
   bool _loading = false;
   String? _error;
-  bool _initialized = false;
   Map<String, int> _slotRegistrationCounts = const {};
   int _maxRegistrationsPerSlot = 4;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initialized) return;
-    _initialized = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (AuthScope.of(context).isDemoMode) {
-        _load();
-      }
-    });
-  }
-
   Future<void> _load() async {
     final auth = AuthScope.of(context);
-    if (auth.isDemoMode) {
-      setState(() {
-        _selected = Set.from(MockSampleData.preselectedSlotKeys);
-        _slotRegistrationCounts = MockSampleData.lecturerRegistrationCounts;
-        _maxRegistrationsPerSlot = 4;
-        _isSubmitted = false;
-        _loading = false;
-      });
-      return;
-    }
-
     final ctx = _context;
     if (ctx == null) return;
     setState(() {
@@ -127,14 +101,6 @@ class _LecturerSlotRegistrationScreenState
   }).toList();
 
   Future<bool> _persist(Set<String> keys) async {
-    if (AuthScope.of(context).isDemoMode) {
-      if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('[Chế độ demo] Đã lưu đăng ký Slot')),
-      );
-      return true;
-    }
-
     final ctx = _context;
     if (ctx == null) return false;
     if (!ctx.round.isOpen) {
@@ -290,15 +256,33 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
 
   void _toggle(int day, int slot) {
     final key = SlotRegistrationMatrix.cellKey(day, slot);
-    setState(() {
-      if (widget.mode == SlotRegistrationMode.student) {
+    if (widget.mode == SlotRegistrationMode.student) {
+      setState(() {
         _selected = _selected.contains(key) ? {} : {key};
-      } else if (_selected.contains(key)) {
-        _selected.remove(key);
-      } else {
-        _selected.add(key);
-      }
-    });
+      });
+      return;
+    }
+
+    if (_selected.contains(key)) {
+      setState(() => _selected.remove(key));
+      return;
+    }
+
+    if (_selected.length >= ReviewSlotSchedule.maxLecturerSelectedSlots) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Chỉ được chọn tối đa '
+            '${ReviewSlotSchedule.maxLecturerSelectedSlots} Slot. '
+            'Bỏ chọn một Slot khác trước khi thêm.',
+          ),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _selected.add(key));
   }
 
   Future<void> _handleSave() async {
@@ -478,7 +462,10 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    'Đã chọn: ${_selected.length} Slot',
+                                    widget.mode == SlotRegistrationMode.lecturer
+                                        ? 'Đã chọn: ${_selected.length}/'
+                                            '${ReviewSlotSchedule.maxLecturerSelectedSlots} Slot'
+                                        : 'Đã chọn: ${_selected.length} Slot',
                                     style: const TextStyle(
                                       color: Color(0xFF38BDF8),
                                       fontWeight: FontWeight.w800,
@@ -505,7 +492,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                         const SizedBox(height: 6),
                         Text(
                           widget.mode == SlotRegistrationMode.lecturer
-                              ? 'Chọn các Slot bạn có thể tham gia. Phòng Đào tạo sẽ dùng bản đã nộp để xếp lịch.'
+                              ? 'Chọn tối đa ${ReviewSlotSchedule.maxLecturerSelectedSlots} Slot bạn có thể tham gia. Phòng Đào tạo sẽ dùng bản đã nộp để xếp lịch.'
                               : 'Trưởng nhóm chọn Slot phù hợp với toàn bộ thành viên.',
                           style: TextStyle(
                             color: AppTheme.white.withValues(alpha: 0.85),
@@ -619,7 +606,8 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
               bottom: 0,
               child: StickyActionButton(
                 label: widget.mode == SlotRegistrationMode.lecturer
-                    ? 'Lưu nháp (${_selected.length} Slot)'
+                    ? 'Lưu nháp (${_selected.length}/'
+                        '${ReviewSlotSchedule.maxLecturerSelectedSlots} Slot)'
                     : 'Xác nhận đăng ký',
                 loading: saving,
                 icon: Icons.save_outlined,

@@ -17,11 +17,11 @@ class ApiClient {
   }
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (_auth.accessToken != null && !_auth.isDemoMode)
-          'Authorization': 'Bearer ${_auth.accessToken}',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (_auth.accessToken != null)
+      'Authorization': 'Bearer ${_auth.accessToken}',
+  };
 
   Future<http.Response> get(String path, {Map<String, String>? query}) =>
       _send(() => http.get(_uri(path, query), headers: _headers));
@@ -30,40 +30,35 @@ class ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
-  }) =>
-      _send(
-        () => http.post(
-          _uri(path, query),
-          headers: _headers,
-          body: body != null ? jsonEncode(body) : null,
-        ),
-      );
+  }) => _send(
+    () => http.post(
+      _uri(path, query),
+      headers: _headers,
+      body: body != null ? jsonEncode(body) : null,
+    ),
+  );
 
   Future<http.Response> put(
     String path, {
     Object? body,
     Map<String, String>? query,
-  }) =>
-      _send(
-        () => http.put(
-          _uri(path, query),
-          headers: _headers,
-          body: body != null ? jsonEncode(body) : null,
-        ),
-      );
+  }) => _send(
+    () => http.put(
+      _uri(path, query),
+      headers: _headers,
+      body: body != null ? jsonEncode(body) : null,
+    ),
+  );
 
   Future<http.Response> patch(String path, {Object? body}) => _send(
-        () => http.patch(
-          _uri(path),
-          headers: _headers,
-          body: body != null ? jsonEncode(body) : null,
-        ),
-      );
+    () => http.patch(
+      _uri(path),
+      headers: _headers,
+      body: body != null ? jsonEncode(body) : null,
+    ),
+  );
 
-  Future<http.Response> delete(
-    String path, {
-    Map<String, String>? query,
-  }) =>
+  Future<http.Response> delete(String path, {Map<String, String>? query}) =>
       _send(() => http.delete(_uri(path, query), headers: _headers));
 
   Future<http.Response> postMultipart(
@@ -99,9 +94,7 @@ class ApiClient {
     return response.bodyBytes;
   }
 
-  Future<http.Response> _send(
-    Future<http.Response> Function() request,
-  ) async {
+  Future<http.Response> _send(Future<http.Response> Function() request) async {
     var response = await request();
     if (response.statusCode == 401 && await _tryRefresh()) {
       response = await request();
@@ -111,7 +104,7 @@ class ApiClient {
 
   Future<bool> _tryRefresh() async {
     try {
-      await _auth.refreshAccessToken();
+      await _auth.refreshAccessToken(notify: false);
       return true;
     } catch (_) {
       return false;
@@ -121,6 +114,9 @@ class ApiClient {
   void throwIfFailed(http.Response response, String action) {
     if (response.statusCode >= 400) {
       String message = '$action thất bại (${response.statusCode})';
+      if (response.statusCode == 403) {
+        message = 'Bạn không có quyền thực hiện thao tác này. (403) ';
+      }
       try {
         final body = jsonDecode(response.body);
         if (body is Map) {
@@ -202,7 +198,38 @@ class ApiClient {
         return 'AI chỉ phân tích PDF, DOCX hoặc TXT. File ZIP cần giải nén trước.';
       case 'Không trích xuất được nội dung văn bản từ tài liệu.':
         return 'Không đọc được nội dung văn bản từ tài liệu để phân tích AI.';
+      case 'Enter the correct review session access code before opening this session.':
+        return 'Cần nhập đúng mã truy cập buổi review trước khi mở phiên này.';
+      case 'The review session access code is incorrect.':
+        return 'Mã truy cập buổi review không đúng.';
+      case 'The Training Department has not generated an access code for this review session.':
+        return 'Phòng Đào tạo chưa tạo mã truy cập cho buổi review này.';
+      case 'The review session access code must contain exactly 8 valid characters.':
+        return 'Mã truy cập phải đúng 8 ký tự hợp lệ.';
+      case 'Only a lecturer assigned to this review session can enter its access code.':
+        return 'Chỉ giảng viên được phân công mới nhập được mã truy cập buổi này.';
+      case 'You are not assigned to this review session.':
+        return 'Bạn không được phân công buổi review này.';
+      case 'Attendance opens when slot 1 starts.':
+      case 'Attendance opens when slot 2 starts.':
+      case 'Attendance opens when slot 3 starts.':
+      case 'Attendance opens when slot 4 starts.':
+      case 'Attendance opens when slot 5 starts.':
+        return raw
+            .replaceFirst(
+              'Attendance opens when slot ',
+              'Điểm danh chỉ mở khi Slot ',
+            )
+            .replaceFirst(' starts.', ' bắt đầu.');
+      case 'All reviewer submissions are required before completion.':
+        return 'Cần mọi giảng viên được phân công gửi nhận xét trước khi kết thúc buổi.';
       default:
+        if (raw.startsWith('Attendance opens when slot ')) {
+          final slot = raw
+              .replaceFirst('Attendance opens when slot ', '')
+              .replaceFirst(' starts.', '');
+          return 'Điểm danh chỉ mở khi Slot $slot bắt đầu.';
+        }
         return raw;
     }
   }

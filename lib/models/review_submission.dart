@@ -77,6 +77,7 @@ class ReviewSubmission {
     this.workProductSize,
     this.effortHours,
     this.reviewerComment,
+    this.reviewerComments = const [],
     this.suggestion,
     this.resultText,
     this.lastSavedAt,
@@ -107,6 +108,10 @@ class ReviewSubmission {
       workProductSize: json['workProductSize'] as String?,
       effortHours: (json['effortHours'] as num?)?.toDouble(),
       reviewerComment: json['reviewerComment'] as String?,
+      reviewerComments: (json['reviewerComments'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList(),
       suggestion: json['suggestion'] as String?,
       resultText: json['resultText'] as String?,
       lastSavedAt: json['lastSavedAt'] != null
@@ -139,6 +144,7 @@ class ReviewSubmission {
   final String? workProductSize;
   final double? effortHours;
   final String? reviewerComment;
+  final List<String> reviewerComments;
   final String? suggestion;
   final String? resultText;
   final DateTime? lastSavedAt;
@@ -153,6 +159,7 @@ class ReviewSubmission {
     String? workProductSize,
     double? effortHours,
     String? reviewerComment,
+    List<String>? reviewerComments,
     String? suggestion,
     String? resultText,
     List<ReviewSubmissionItem>? items,
@@ -176,6 +183,7 @@ class ReviewSubmission {
       workProductSize: workProductSize ?? this.workProductSize,
       effortHours: effortHours ?? this.effortHours,
       reviewerComment: reviewerComment ?? this.reviewerComment,
+      reviewerComments: reviewerComments ?? this.reviewerComments,
       suggestion: suggestion ?? this.suggestion,
       resultText: resultText ?? this.resultText,
       lastSavedAt: lastSavedAt,
@@ -189,6 +197,7 @@ class ReviewSubmission {
         if (workProductSize != null) 'workProductSize': workProductSize,
         if (effortHours != null) 'effortHours': effortHours,
         if (reviewerComment != null) 'reviewerComment': reviewerComment,
+        if (reviewerComments.isNotEmpty) 'reviewerComments': reviewerComments,
         if (suggestion != null) 'suggestion': suggestion,
         if (resultText != null) 'resultText': resultText,
         'items': items

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app/auth_scope.dart';
@@ -19,6 +20,21 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
+  static const _enableDemoMode = bool.fromEnvironment('ENABLE_DEMO_MODE');
+  static const _enableQuickLogin = bool.fromEnvironment(
+    'ENABLE_LECTURER_QUICK_LOGIN',
+  );
+  static const _quickLoginUsername = String.fromEnvironment(
+    'LECTURER_QUICK_USERNAME',
+    defaultValue: 'minhnd.gv24001@fpt.edu.vn',
+  );
+  static const _quickLoginPassword = String.fromEnvironment(
+    'LECTURER_QUICK_PASSWORD',
+  );
+
+  static const _showQuickLogin =
+      kDebugMode && _enableQuickLogin && _quickLoginPassword != '';
+
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -102,14 +118,31 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    await _authenticate(
+      username: _usernameController.text.trim(),
+      password: _passwordController.text,
+    );
+  }
+
+  Future<void> _quickLogin() async {
+    _usernameController.text = _quickLoginUsername;
+    _passwordController.text = _quickLoginPassword;
+
+    await _authenticate(
+      username: _quickLoginUsername,
+      password: _quickLoginPassword,
+    );
+  }
+
+  Future<void> _authenticate({
+    required String username,
+    required String password,
+  }) async {
     setState(() => _loading = true);
     final auth = AuthScope.of(context);
 
     try {
-      await auth.login(
-        username: _usernameController.text.trim(),
-        password: _passwordController.text,
-      );
+      await auth.login(username: username, password: password);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } on AuthException catch (e) {
@@ -119,6 +152,12 @@ class _LoginScreenState extends State<LoginScreen>
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _enterDemoMode() {
+    final auth = AuthScope.of(context);
+    auth.enterDemoMode();
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   void _showError(String message) {
@@ -167,7 +206,10 @@ class _LoginScreenState extends State<LoginScreen>
                   return Stack(
                     children: [
                       Align(
-                        alignment: Alignment(-0.8 + 0.35 * math.sin(angle), -0.7 + 0.25 * math.cos(angle)),
+                        alignment: Alignment(
+                          -0.8 + 0.35 * math.sin(angle),
+                          -0.7 + 0.25 * math.cos(angle),
+                        ),
                         child: Container(
                           width: 340,
                           height: 340,
@@ -183,7 +225,10 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       Align(
-                        alignment: Alignment(0.85 - 0.3 * math.cos(angle), 0.65 + 0.2 * math.sin(angle)),
+                        alignment: Alignment(
+                          0.85 - 0.3 * math.cos(angle),
+                          0.65 + 0.2 * math.sin(angle),
+                        ),
                         child: Container(
                           width: 380,
                           height: 380,
@@ -247,7 +292,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 offset: const Offset(0, 18),
                               ),
                               BoxShadow(
-                                color: const Color(0xFF0F172A).withValues(alpha: 0.4),
+                                color: const Color(
+                                  0xFF0F172A,
+                                ).withValues(alpha: 0.4),
                                 blurRadius: 60,
                                 offset: const Offset(0, 30),
                               ),
@@ -277,7 +324,9 @@ class _LoginScreenState extends State<LoginScreen>
                                     'Đăng nhập cổng quản lý & đánh giá đồ án',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: AppTheme.darkGray.withValues(alpha: 0.8),
+                                      color: AppTheme.darkGray.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -290,10 +339,14 @@ class _LoginScreenState extends State<LoginScreen>
                                     controller: _usernameController,
                                     decoration: const InputDecoration(
                                       labelText: 'Tên đăng nhập',
-                                      prefixIcon: Icon(Icons.person_outline, color: activeColor),
+                                      prefixIcon: Icon(
+                                        Icons.person_outline,
+                                        color: activeColor,
+                                      ),
                                     ),
                                     textInputAction: TextInputAction.next,
-                                    validator: (v) => v == null || v.trim().isEmpty
+                                    validator: (v) =>
+                                        v == null || v.trim().isEmpty
                                         ? 'Nhập tên đăng nhập'
                                         : null,
                                   ),
@@ -305,7 +358,10 @@ class _LoginScreenState extends State<LoginScreen>
                                     controller: _passwordController,
                                     decoration: InputDecoration(
                                       labelText: 'Mật khẩu',
-                                      prefixIcon: const Icon(Icons.lock_outline, color: activeColor),
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline,
+                                        color: activeColor,
+                                      ),
                                       suffixIcon: IconButton(
                                         icon: Icon(
                                           _obscurePassword
@@ -313,7 +369,8 @@ class _LoginScreenState extends State<LoginScreen>
                                               : Icons.visibility_off_outlined,
                                         ),
                                         onPressed: () => setState(
-                                          () => _obscurePassword = !_obscurePassword,
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
                                         ),
                                       ),
                                     ),
@@ -339,7 +396,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: activeColor.withValues(alpha: 0.42),
+                                          color: activeColor.withValues(
+                                            alpha: 0.42,
+                                          ),
                                           blurRadius: 20,
                                           offset: const Offset(0, 8),
                                         ),
@@ -349,9 +408,13 @@ class _LoginScreenState extends State<LoginScreen>
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                       ),
                                       onPressed: _loading ? null : _submit,
@@ -362,10 +425,11 @@ class _LoginScreenState extends State<LoginScreen>
                                                 key: ValueKey('loading'),
                                                 height: 22,
                                                 width: 22,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2.5,
-                                                  color: AppTheme.white,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      color: AppTheme.white,
+                                                    ),
                                               )
                                             : const Text(
                                                 key: ValueKey('label'),
@@ -380,6 +444,36 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
                                 ),
+                                if (_showQuickLogin) ...[
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    key: const ValueKey(
+                                      'lecturer-quick-login-button',
+                                    ),
+                                    onPressed: _loading ? null : _quickLogin,
+                                    icon: const Icon(Icons.bolt_rounded),
+                                    label: const Text(
+                                      'Đăng nhập nhanh · Nguyễn Đức Minh',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _quickLoginUsername,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: AppTheme.mediumGray,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                                if (_enableDemoMode) ...[
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed: _loading ? null : _enterDemoMode,
+                                    icon: const Icon(Icons.science_outlined),
+                                    label: const Text('Xem demo Lecturer'),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -460,7 +554,9 @@ class _NeuralConstellationPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    final positions = particles.map((p) => Offset(p.x * size.width, p.y * size.height)).toList();
+    final positions = particles
+        .map((p) => Offset(p.x * size.width, p.y * size.height))
+        .toList();
 
     for (int i = 0; i < particles.length; i++) {
       final posI = positions[i];
@@ -522,10 +618,7 @@ class _QuantumLogoEmblem extends StatelessWidget {
               // 1. Quỹ đạo Photon Halo xoay 360 độ độc lạ
               CustomPaint(
                 size: const Size(115, 115),
-                painter: _QuantumHaloPainter(
-                  progress: t,
-                  color: activeColor,
-                ),
+                painter: _QuantumHaloPainter(progress: t, color: activeColor),
               ),
               // 2. Thẻ Squircle 3D Holographic nổi ở trung tâm
               Transform.translate(
@@ -550,7 +643,9 @@ class _QuantumLogoEmblem extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: activeColor.withValues(alpha: 0.55 + 0.15 * pulse),
+                        color: activeColor.withValues(
+                          alpha: 0.55 + 0.15 * pulse,
+                        ),
                         blurRadius: 28 + 8 * pulse,
                         offset: Offset(0, 12 + 4 * pulse),
                       ),
@@ -646,9 +741,5 @@ class _QuantumHaloPainter extends CustomPainter {
 
 void logout(BuildContext context) {
   AuthScope.of(context).logout();
-  Navigator.pushNamedAndRemoveUntil(
-    context,
-    AppRoutes.login,
-    (_) => false,
-  );
+  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
 }

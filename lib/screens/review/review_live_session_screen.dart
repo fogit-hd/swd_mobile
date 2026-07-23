@@ -16,6 +16,8 @@ import '../../widgets/ui/ai_suggestion_popover.dart';
 import '../../widgets/ui/pulse_gradient_button.dart';
 import '../../widgets/ui/shimmer_loading.dart';
 import '../../widgets/ui/status_badge.dart';
+import '../../utils/review_slot_schedule.dart';
+import '../lecturer/lecturer_group_documents_screen.dart';
 import 'review_submission_screen.dart';
 
 /// Buổi review trực tiếp — điểm danh E360, ghi chú, AI gợi ý, kết thúc review.
@@ -34,13 +36,16 @@ class ReviewLiveSessionScreen extends StatefulWidget {
   final int? groupId;
   final String? groupCode;
   final int? submissionId;
+
   /// Trạng thái hiển thị từ danh sách lịch (tránh luôn hiện "Đang chấm").
   final ProjectReviewStatus? initialStatus;
+
   /// Gợi ý AI truyền sẵn (demo / override). Null → gọi BE.
   final ProjectSuggestion? aiSummary;
 
   @override
-  State<ReviewLiveSessionScreen> createState() => _ReviewLiveSessionScreenState();
+  State<ReviewLiveSessionScreen> createState() =>
+      _ReviewLiveSessionScreenState();
 }
 
 class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
@@ -75,8 +80,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
     final submissionId = widget.submissionId;
     if (submissionId != null && submissionId > 0) {
       try {
-        final submission =
-            await ReviewService(client).fetchSubmission(submissionId);
+        final submission = await ReviewService(
+          client,
+        ).fetchSubmission(submissionId);
         if (submission.groupId > 0) return submission.groupId;
       } catch (_) {}
     }
@@ -88,9 +94,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
         if (s.sessionId != widget.sessionId || s.groupId <= 0) continue;
         if (code == null || code.isEmpty) return s.groupId;
         // Khớp theo submissionId nếu có.
-        if (submissionId != null &&
-            submissionId > 0 &&
-            s.id == submissionId) {
+        if (submissionId != null && submissionId > 0 && s.id == submissionId) {
           return s.groupId;
         }
       }
@@ -113,8 +117,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
         final semester = await semesterService.getActiveSemester();
         final groups = await semesterService.fetchGroups(semester.id);
         for (final g in groups) {
-          if (g.code != null &&
-              g.code!.toLowerCase() == code.toLowerCase()) {
+          if (g.code != null && g.code!.toLowerCase() == code.toLowerCase()) {
             return g.id;
           }
         }
@@ -188,8 +191,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       final submissionId = widget.submissionId;
       if (submissionId != null && submissionId > 0) {
         try {
-          final submission =
-              await ReviewService(client).fetchSubmission(submissionId);
+          final submission = await ReviewService(
+            client,
+          ).fetchSubmission(submissionId);
           if (submission.isSubmitted) {
             status = ProjectReviewStatus.completed;
           }
@@ -308,15 +312,34 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
         .toList();
   }
 
+  Future<void> _openGroupDocuments() async {
+    final groupId = _resolvedGroupId ?? _data?.groupId ?? widget.groupId;
+    if (groupId == null || groupId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chưa xác định được nhóm — không mở được tài liệu'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => LecturerGroupDocumentsScreen(
+          groupId: groupId,
+          groupCode: widget.groupCode ?? _data?.groupCode,
+        ),
+      ),
+    );
+  }
+
   Future<void> _persistNoteIfAny(ReviewAttendanceService service) async {
     final note = _noteController.text.trim();
     final groupId = _data?.groupId;
     if (note.isEmpty || groupId == null || groupId <= 0) return;
-    await service.addComment(
-      widget.sessionId,
-      groupId: groupId,
-      content: note,
-    );
+    await service.addComment(widget.sessionId, groupId: groupId, content: note);
   }
 
   Future<void> _saveAttendance() async {
@@ -343,9 +366,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       await _persistNoteIfAny(service);
       if (!mounted) return;
       setState(() => _data = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu điểm danh')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã lưu điểm danh')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -381,20 +404,21 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       );
       await _persistNoteIfAny(service);
 
-      // Kết thúc buổi còn yêu cầu mọi reviewer đã GỬI bài chấm checklist.
+      // Kết thúc buổi còn yêu cầu mọi reviewer đã gửi checklist nhận xét.
       final submissionId = widget.submissionId;
       if (submissionId != null && submissionId > 0) {
-        final submission =
-            await ReviewService(client).fetchSubmission(submissionId);
+        final submission = await ReviewService(
+          client,
+        ).fetchSubmission(submissionId);
         if (!submission.isSubmitted) {
           if (!mounted) return;
           setState(() => _completing = false);
           final goFill = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Chưa gửi bài chấm'),
+              title: const Text('Chưa gửi nhận xét'),
               content: const Text(
-                'Điểm danh đã lưu. Để kết thúc buổi, bạn cần gửi bài chấm checklist '
+                'Điểm danh đã lưu. Để kết thúc buổi, bạn cần gửi checklist nhận xét '
                 'ở form review (và các giảng viên được phân công khác cũng phải gửi).',
               ),
               actions: [
@@ -415,7 +439,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
               MaterialPageRoute<void>(
                 builder: (_) => ReviewSubmissionScreen(
                   submissionId: submissionId,
-                  sessionTitle: widget.groupCode ?? 'Bài chấm review',
+                  sessionTitle: widget.groupCode ?? 'Nhận xét review',
                 ),
               ),
             );
@@ -430,9 +454,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       );
       if (!mounted) return;
       setState(() => _groupStatus = ProjectReviewStatus.completed);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã hoàn tất review nhóm')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã hoàn tất review nhóm')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -451,6 +475,11 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       appBar: AppBar(
         title: Text(widget.groupCode ?? 'Buổi review'),
         actions: [
+          IconButton(
+            tooltip: 'Tài liệu nhóm',
+            onPressed: _openGroupDocuments,
+            icon: const Icon(Icons.folder_open_outlined),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: StatusBadge(status: _groupStatus, compact: true),
@@ -516,22 +545,25 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
           children: [
             Text(
               '${data.groupCode ?? ''} • ${data.sessionCode ?? ''}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             if (data.room != null)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xxs),
                 child: Text(
-                  'Phòng ${data.room} • Ca ${data.slot ?? '—'}',
+                  'Phòng ${data.room} • ${ReviewSlotSchedule.labelOf(data.slot)}',
                   style: const TextStyle(
                     color: AppTheme.mediumGray,
                     fontSize: 13,
                   ),
                 ),
               ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: _openGroupDocuments,
+              icon: const Icon(Icons.folder_open_outlined, size: 18),
+              label: const Text('Xem / tải tài liệu nhóm'),
+            ),
             const SizedBox(height: AppSpacing.lg),
             const Text(
               'Điểm danh — chạm tên SV vắng mặt',
@@ -565,8 +597,9 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
                       ),
                     ),
                     label: Text(s.fullName ?? s.studentCode ?? '—'),
-                    backgroundColor:
-                        absent ? AppTheme.errorLight : AppTheme.white,
+                    backgroundColor: absent
+                        ? AppTheme.errorLight
+                        : AppTheme.white,
                     side: BorderSide(
                       color: absent ? AppTheme.error : AppTheme.lightGray,
                     ),
@@ -612,7 +645,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Kết thúc khi đã điểm danh đủ và mọi giảng viên phân công đã gửi bài chấm.',
+                'Kết thúc khi đã điểm danh đủ và mọi giảng viên được phân công đã gửi nhận xét.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppTheme.mediumGray,

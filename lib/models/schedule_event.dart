@@ -1,3 +1,5 @@
+import '../utils/review_slot_schedule.dart';
+
 class ScheduleEvent {
   const ScheduleEvent({
     required this.date,
@@ -15,12 +17,12 @@ class ScheduleEvent {
   final String? room;
   final String? type;
 
-  String get slotLabel => slot != null ? 'Ca $slot' : '';
+  String get slotLabel => slot != null ? ReviewSlotSchedule.labelOf(slot) : '';
 
   String get detail {
     final parts = <String>[
       if (room != null && room!.isNotEmpty) room!,
-      if (slot != null) 'Ca $slot',
+      if (slot != null) ReviewSlotSchedule.labelOf(slot),
       ?type,
     ];
     return parts.join(' • ');

@@ -4,6 +4,7 @@ import '../../app/auth_scope.dart';
 import '../../models/review_attendance.dart';
 import '../../services/api_client.dart';
 import '../../services/review_attendance_service.dart';
+import '../../utils/review_slot_schedule.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_loading.dart';
 
@@ -41,8 +42,9 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
 
     try {
       final auth = AuthScope.of(context);
-      final data = await ReviewAttendanceService(ApiClient(auth))
-          .fetchAttendance(widget.sessionId);
+      final data = await ReviewAttendanceService(
+        ApiClient(auth),
+      ).fetchAttendance(widget.sessionId);
       if (!mounted) return;
       setState(() {
         _data = data;
@@ -101,18 +103,18 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
       final auth = AuthScope.of(context);
       final updated = await ReviewAttendanceService(ApiClient(auth))
           .submitAttendance(
-        widget.sessionId,
-        groupId: data.groupId,
-        entries: data.students,
-      );
+            widget.sessionId,
+            groupId: data.groupId,
+            entries: data.students,
+          );
       if (!mounted) return;
       setState(() {
         _data = updated;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã lưu điểm danh')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã lưu điểm danh')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -125,9 +127,7 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.sessionTitle ?? 'Điểm danh'),
-      ),
+      appBar: AppBar(title: Text(widget.sessionTitle ?? 'Điểm danh')),
       body: _buildBody(),
       floatingActionButton: _data != null
           ? FloatingActionButton.extended(
@@ -186,7 +186,7 @@ class _ReviewAttendanceScreenState extends State<ReviewAttendanceScreen> {
         ),
         if (data.room != null)
           Text(
-            'Phòng ${data.room} • Ca ${data.slot ?? '—'}',
+            'Phòng ${data.room} • ${ReviewSlotSchedule.labelOf(data.slot)}',
             style: const TextStyle(color: AppTheme.mediumGray, fontSize: 13),
           ),
         const SizedBox(height: 16),

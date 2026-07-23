@@ -9,7 +9,7 @@ class LecturerReviewProjectsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const ReviewSessionsScreen(
       title: 'Dự án review',
-      subtitle: 'Chọn phiên để nhập nhận xét hoặc điểm danh',
+      subtitle: 'Mở dự án để xem tài liệu, điểm danh và gửi nhận xét',
       emptyMessage: 'Chưa có phiên review nào được gán cho bạn.',
       showAttendance: true,
     );

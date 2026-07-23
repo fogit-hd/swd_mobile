@@ -10,10 +10,7 @@ import '../services/semester_service.dart';
 import '../theme/app_theme.dart';
 
 class ReviewContext {
-  const ReviewContext({
-    required this.semester,
-    required this.round,
-  });
+  const ReviewContext({required this.semester, required this.round});
 
   final Semester semester;
   final ReviewRound round;
@@ -22,10 +19,7 @@ class ReviewContext {
 }
 
 class ReviewContextBar extends StatefulWidget {
-  const ReviewContextBar({
-    super.key,
-    required this.onChanged,
-  });
+  const ReviewContextBar({super.key, required this.onChanged});
 
   final ValueChanged<ReviewContext> onChanged;
 
@@ -57,14 +51,22 @@ class ReviewContextBarState extends State<ReviewContextBar> {
       final auth = AuthScope.of(context);
       if (auth.isDemoMode) {
         final semesters = MockSampleData.semesters;
+        final rounds = MockSampleData.reviewRounds;
+        final selectedSemester = semesters.isNotEmpty ? semesters.first : null;
+        final selectedRound = rounds.isNotEmpty ? rounds.first : null;
         if (!mounted) return;
         setState(() {
           _semesters = semesters;
-          _semester = semesters.isNotEmpty ? semesters.first : null;
-          _rounds = const [];
-          _round = null;
+          _semester = selectedSemester;
+          _rounds = rounds;
+          _round = selectedRound;
           _loading = false;
         });
+        if (selectedSemester != null && selectedRound != null) {
+          widget.onChanged(
+            ReviewContext(semester: selectedSemester, round: selectedRound),
+          );
+        }
         return;
       }
 
@@ -101,8 +103,9 @@ class ReviewContextBarState extends State<ReviewContextBar> {
 
     try {
       final auth = AuthScope.of(context);
-      final rounds =
-          await ReviewService(ApiClient(auth)).fetchRounds(semesterId: semesterId);
+      final rounds = await ReviewService(
+        ApiClient(auth),
+      ).fetchRounds(semesterId: semesterId);
       if (!mounted) return;
 
       // Open trước, rồi các đợt còn lại (Closed/Draft không cho lưu slot).

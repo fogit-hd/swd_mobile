@@ -349,12 +349,14 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
                                 color: AppTheme.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(50),
@@ -371,7 +373,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                     ),
                                     child: const Icon(Icons.bolt_rounded, color: AppTheme.black, size: 12),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     widget.mode == SlotRegistrationMode.lecturer
                                         ? 'HỘI ĐỒNG ĐÁNH GIÁ'
@@ -379,15 +381,15 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                     style: const TextStyle(
                                       color: AppTheme.white,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 11,
-                                      letterSpacing: 0.5,
+                                      fontSize: 10.5,
+                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF06B6D4).withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(50),
@@ -410,13 +412,13 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     'Đã chọn: ${_selected.length} ca',
                                     style: const TextStyle(
                                       color: Color(0xFF38BDF8),
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                     ),
                                   ),
                                 ],

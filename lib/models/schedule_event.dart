@@ -21,7 +21,7 @@ class ScheduleEvent {
     final parts = <String>[
       if (room != null && room!.isNotEmpty) room!,
       if (slot != null) 'Ca $slot',
-      if (type != null) type!,
+      ?type,
     ];
     return parts.join(' • ');
   }

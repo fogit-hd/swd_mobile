@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../app/auth_scope.dart';
-import '../../models/defense.dart';
 import '../../models/review_session.dart';
 import '../../models/schedule_event.dart';
 import '../../services/api_client.dart';
-import '../../services/defense_service.dart';
 import '../../services/review_service.dart';
 import '../../widgets/weekly_vertical_schedule.dart';
 
@@ -40,16 +38,10 @@ class _LecturerPersonalScheduleScreenState
     try {
       final auth = AuthScope.of(context);
       final client = ApiClient(auth);
-      final reviewSessions =
-          await ReviewService(client).fetchMySessions();
-      final defenseSessions =
-          await DefenseService(client).fetchMyBoardSessions();
+      final reviewSessions = await ReviewService(client).fetchMySessions();
 
       final events = <ScheduleEvent>[
         ...reviewSessions.where((s) => s.sessionDate != null).map(_fromReview),
-        ...defenseSessions
-            .where((s) => s.sessionDate != null)
-            .map(_fromDefense),
       ];
 
       if (!mounted) return;
@@ -69,24 +61,12 @@ class _LecturerPersonalScheduleScreenState
   ScheduleEvent _fromReview(ReviewSession s) {
     final date = s.sessionDate;
     return ScheduleEvent(
-        date: date ?? DateTime.now(),
-        slot: s.slot,
-        title: s.title,
-        subtitle: s.typeLabel,
-        room: s.room,
-        type: 'Buổi review',
-      );
-  }
-
-  ScheduleEvent _fromDefense(DefenseSessionAssignment s) {
-    final date = s.sessionDate;
-    return ScheduleEvent(
-        date: date ?? DateTime.now(),
-        slot: s.slot,
-        title: s.title,
-        subtitle: s.councilCode,
-        room: s.room,
-        type: 'Buổi bảo vệ',
+      date: date ?? DateTime.now(),
+      slot: s.slot,
+      title: s.title,
+      subtitle: s.typeLabel,
+      room: s.room,
+      type: 'Buổi review',
     );
   }
 
@@ -112,7 +92,7 @@ class _LecturerPersonalScheduleScreenState
     return WeeklyVerticalSchedule(
       events: _events,
       loading: _loading,
-      emptyMessage: 'Không có lịch review/bảo vệ trong tuần này.',
+      emptyMessage: 'Không có lịch review trong tuần này.',
       onRefresh: _load,
     );
   }

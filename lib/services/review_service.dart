@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 
 import '../models/review_availability.dart';
 import '../models/review_enums.dart';
@@ -23,10 +26,10 @@ class ReviewService {
         .toList();
   }
 
-  /// Danh sách submission của giảng viên (kết quả / điểm / ghi chú tóm tắt).
+  /// Danh sách nhận xét mà giảng viên đã lưu hoặc gửi.
   Future<List<ReviewSubmissionSummary>> fetchMySubmissions() async {
     final response = await _client.get('/api/review-submissions/my');
-    _client.throwIfFailed(response, 'Tải danh sách review đã chấm');
+    _client.throwIfFailed(response, 'Tải danh sách nhận xét review');
 
     final list = jsonDecode(response.body) as List<dynamic>;
     return list
@@ -129,6 +132,15 @@ class ReviewService {
 
   Future<List<int>> exportSubmissionXlsx(int submissionId) =>
       _client.download('/api/review-submissions/$submissionId/export.xlsx');
+
+  /// Xuất checklist review ra file Excel tạm trên máy (không phải tài liệu nhóm).
+  Future<File> exportSubmissionXlsxToFile(int submissionId) async {
+    final bytes = await exportSubmissionXlsx(submissionId);
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/review_checklist_$submissionId.xlsx');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
 
   static String defaultReviewType() => ReviewType.defaultType.apiValue;
 }

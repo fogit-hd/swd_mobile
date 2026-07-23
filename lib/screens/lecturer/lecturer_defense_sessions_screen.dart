@@ -13,6 +13,7 @@ import '../../services/semester_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../widgets/app_loading.dart';
+import 'lecturer_group_documents_screen.dart';
 
 class LecturerDefenseSessionsScreen extends StatefulWidget {
   const LecturerDefenseSessionsScreen({super.key});
@@ -459,7 +460,36 @@ class _DefenseSessionDetailScreenState
         state?.isLocked != true;
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.title)),
+      appBar: AppBar(
+        title: Text(s.title),
+        actions: [
+          IconButton(
+            tooltip: 'Tài liệu nhóm',
+            onPressed: () {
+              final groupId =
+                  (_state?.groupId ?? 0) > 0 ? _state!.groupId : s.groupId;
+              if (groupId <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Phiên này chưa gắn nhóm — không mở tài liệu'),
+                  ),
+                );
+                return;
+              }
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => LecturerGroupDocumentsScreen(
+                    groupId: groupId,
+                    groupCode: s.title,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.folder_open_outlined),
+          ),
+        ],
+      ),
       body: _loading
           ? const AppLoadingIndicator(message: 'Đang tải phiên bảo vệ...')
           : ListView(

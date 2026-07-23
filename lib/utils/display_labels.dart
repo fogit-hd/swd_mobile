@@ -115,6 +115,39 @@ abstract final class DisplayLabels {
     }
   }
 
+  static String documentType(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return 'Tài liệu';
+    switch (raw.trim().toLowerCase()) {
+      case 'proposal':
+        return 'Đề xuất (Proposal)';
+      case 'progress':
+        return 'Tiến độ (Progress)';
+      case 'final':
+        return 'Báo cáo cuối (Final)';
+      default:
+        return raw;
+    }
+  }
+
+  static String documentStatus(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '—';
+    switch (raw.trim().toLowerCase()) {
+      case 'submitted':
+        return 'Đã nộp';
+      case 'evaluating':
+        return 'Đang đánh giá';
+      case 'needsrevision':
+      case 'needs_revision':
+        return 'Cần chỉnh sửa';
+      case 'approved':
+        return 'Đã duyệt';
+      case 'rejected':
+        return 'Từ chối';
+      default:
+        return raw;
+    }
+  }
+
   static String orDash(String? value) {
     final v = value?.trim();
     if (v == null || v.isEmpty) return '—';

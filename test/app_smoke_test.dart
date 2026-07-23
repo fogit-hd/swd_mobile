@@ -7,16 +7,18 @@ import 'package:swd_mobile/theme/app_theme.dart';
 import 'package:swd_mobile/widgets/scale_tap.dart';
 
 void main() {
-  testWidgets('Lecturer shell builds all tabs in demo mode', (tester) async {
+  testWidgets('Lecturer review shell builds all tabs in demo mode', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final auth = AuthService()..enterDemoMode();
 
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.theme,
-        home: AuthScope(
-          authService: auth,
-          child: const LecturerShell(),
-        ),
+        home: AuthScope(authService: auth, child: const LecturerShell()),
       ),
     );
     await tester.pump();
@@ -24,15 +26,26 @@ void main() {
 
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.widgetWithIcon(ScaleTap, Icons.rate_review_outlined).last);
+    await tester.tap(
+      find.widgetWithIcon(ScaleTap, Icons.rate_review_outlined).last,
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('review-scope-today')), findsOneWidget);
+    expect(find.byKey(const ValueKey('review-scope-upcoming')), findsOneWidget);
+    expect(find.byKey(const ValueKey('review-scope-all')), findsOneWidget);
 
-    await tester.tap(find.widgetWithIcon(ScaleTap, Icons.grid_view_rounded).last);
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byKey(const ValueKey('review-scope-upcoming')));
+    await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.widgetWithIcon(ScaleTap, Icons.gavel_outlined).last);
+    await tester.tap(find.byKey(const ValueKey('review-scope-all')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(
+      find.widgetWithIcon(ScaleTap, Icons.grid_view_rounded).last,
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
   });

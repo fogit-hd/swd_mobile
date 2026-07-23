@@ -1,6 +1,7 @@
 import '../models/project_suggestion.dart';
 import '../models/published_schedule.dart';
 import '../models/review_attendance.dart';
+import '../models/review_round.dart';
 import '../models/review_session.dart';
 import '../models/semester.dart';
 
@@ -28,6 +29,28 @@ abstract final class MockSampleData {
     ),
   ];
 
+  static List<ReviewRound> get reviewRounds {
+    final today = DateTime.now();
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final saturday = monday.add(const Duration(days: 5));
+    String date(DateTime value) =>
+        '${value.year.toString().padLeft(4, '0')}-'
+        '${value.month.toString().padLeft(2, '0')}-'
+        '${value.day.toString().padLeft(2, '0')}';
+
+    return [
+      ReviewRound(
+        id: 4,
+        semesterId: 1,
+        type: 'Review2',
+        status: 'Open',
+        weekStartDate: date(monday),
+        weekEndDate: date(saturday),
+        registrationCount: 7,
+      ),
+    ];
+  }
+
   static Set<String> get preselectedSlotKeys => {
     '1-1',
     '1-3',
@@ -44,6 +67,14 @@ abstract final class MockSampleData {
     '2-4': 3,
     '3-2': 1,
     '4-5': 2,
+  };
+
+  static Map<String, int> get lecturerRegistrationCounts => {
+    '1-1': 2,
+    '1-3': 1,
+    '2-2': 3,
+    '4-3': 4,
+    '5-1': 1,
   };
 
   static StudentPublishedSchedule get studentSchedule =>

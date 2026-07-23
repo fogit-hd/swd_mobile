@@ -9,6 +9,7 @@ import '../../services/api_client.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_animations.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/review_schedule_filter.dart';
 import '../../widgets/app_loading.dart';
 import '../../widgets/review_session_card.dart';
 import 'review_live_session_screen.dart';
@@ -43,17 +44,11 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
   bool _loading = true;
   String? _error;
   bool _loadStarted = false;
-  bool _showTodayOnly = true;
+  ReviewScheduleScope _scope = ReviewScheduleScope.today;
 
   DateTime _dateOnly(DateTime value) {
     final local = value.toLocal();
     return DateTime(local.year, local.month, local.day);
-  }
-
-  bool _isToday(ReviewSession session) {
-    final date = session.sessionDate;
-    if (date == null) return false;
-    return _dateOnly(date) == _dateOnly(DateTime.now());
   }
 
   int? _daysUntil(ReviewSession session) {
@@ -74,6 +69,71 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
     final date = value.toLocal();
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  Widget _scopeTab({
+    required ReviewScheduleScope scope,
+    required String label,
+    required IconData icon,
+    required int count,
+  }) {
+    final selected = _scope == scope;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: '$label, $count phiên',
+        child: InkWell(
+          key: ValueKey('review-scope-${scope.name}'),
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _scope = scope),
+          child: AnimatedContainer(
+            duration: AppAnimations.fast,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppTheme.primary.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? AppTheme.primary.withValues(alpha: 0.35)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 19,
+                  color: selected ? AppTheme.primary : AppTheme.mediumGray,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected ? AppTheme.primary : AppTheme.mediumGray,
+                  ),
+                ),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? AppTheme.primary : AppTheme.mediumGray,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -206,13 +266,20 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
     });
 
     final allSessions = sessions;
-    final todaySessions = allSessions.where(_isToday).toList();
+    final todaySessions = filterReviewSessions(
+      allSessions,
+      ReviewScheduleScope.today,
+    );
+    final upcomingSessions = filterReviewSessions(
+      allSessions,
+      ReviewScheduleScope.upcoming,
+    );
     final reminderSessions = allSessions.where((session) {
       final days = _daysUntil(session);
       return days != null && days >= 0 && days <= 3 && !session.isSubmitted;
     }).toList();
-    if (widget.showAttendance && _showTodayOnly) {
-      sessions = todaySessions;
+    if (widget.showAttendance) {
+      sessions = filterReviewSessions(allSessions, _scope);
     }
 
     final submittedSummaries = _submissions
@@ -301,42 +368,37 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
           ],
           const SizedBox(height: 16),
           if (widget.showAttendance) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => setState(() => _showTodayOnly = true),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: _showTodayOnly
-                          ? AppTheme.primary.withValues(alpha: 0.1)
-                          : null,
-                    ),
-                    icon: const Icon(Icons.today_outlined),
-                    label: Text(
-                      'Hôm nay (${todaySessions.length})',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppTheme.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: AppTheme.cardShadow,
+              ),
+              child: Row(
+                children: [
+                  _scopeTab(
+                    scope: ReviewScheduleScope.today,
+                    label: 'Hôm nay',
+                    icon: Icons.today_outlined,
+                    count: todaySessions.length,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => setState(() => _showTodayOnly = false),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: !_showTodayOnly
-                          ? AppTheme.primary.withValues(alpha: 0.1)
-                          : null,
-                    ),
-                    icon: const Icon(Icons.view_list_outlined),
-                    label: Text(
-                      'Tất cả (${allSessions.length})',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  const SizedBox(width: 4),
+                  _scopeTab(
+                    scope: ReviewScheduleScope.upcoming,
+                    label: 'Sắp tới',
+                    icon: Icons.upcoming_outlined,
+                    count: upcomingSessions.length,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  _scopeTab(
+                    scope: ReviewScheduleScope.all,
+                    label: 'Tất cả',
+                    icon: Icons.view_list_outlined,
+                    count: allSessions.length,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -345,8 +407,11 @@ class _ReviewSessionsScreenState extends State<ReviewSessionsScreen> {
               padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  widget.showAttendance && _showTodayOnly
+                  widget.showAttendance && _scope == ReviewScheduleScope.today
                       ? 'Hôm nay chưa có Slot review nào.'
+                      : widget.showAttendance &&
+                            _scope == ReviewScheduleScope.upcoming
+                      ? 'Chưa có Slot review sắp tới.'
                       : widget.emptyMessage,
                   style: const TextStyle(color: AppTheme.mediumGray),
                 ),

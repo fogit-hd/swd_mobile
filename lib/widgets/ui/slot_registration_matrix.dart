@@ -21,6 +21,8 @@ class SlotMatrixCell extends StatefulWidget {
     this.occupiedCount,
     this.maxOccupancy = 3,
     this.showOccupancy = false,
+    this.registrationLabel,
+    this.blockedReason,
   });
 
   final bool selected;
@@ -31,6 +33,8 @@ class SlotMatrixCell extends StatefulWidget {
   final int? occupiedCount;
   final int maxOccupancy;
   final bool showOccupancy;
+  final String? registrationLabel;
+  final String? blockedReason;
 
   @override
   State<SlotMatrixCell> createState() => _SlotMatrixCellState();
@@ -46,111 +50,182 @@ class _SlotMatrixCellState extends State<SlotMatrixCell> {
         count >= widget.maxOccupancy;
   }
 
+  bool get _isBlocked => widget.blockedReason?.isNotEmpty == true;
+
   @override
   Widget build(BuildContext context) {
-    final canTap = widget.enabled && widget.onTap != null && !_isFull;
+    final canTap =
+        widget.enabled &&
+        widget.onTap != null &&
+        (!_isFull || widget.selected) &&
+        !_isBlocked;
 
-    return GestureDetector(
-      onTapDown: canTap ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: canTap ? (_) => setState(() => _pressed = false) : null,
-      onTapCancel: canTap ? () => setState(() => _pressed = false) : null,
-      onTap: canTap ? widget.onTap : null,
-      child: AnimatedContainer(
-        duration: AppAnimations.fast,
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.diagonal3Values(
-          _pressed ? 0.94 : 1.0,
-          _pressed ? 0.94 : 1.0,
-          1.0,
-        ),
-        constraints: const BoxConstraints(
-          minWidth: AppSpacing.minTouchTarget,
-          minHeight: 56,
-        ),
-        decoration: BoxDecoration(
-          color: widget.selected
-              ? null
-              : _isFull
-              ? AppTheme.errorLight
-              : null,
-          gradient: widget.selected
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
-                )
-              : _isFull
-              ? null
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
-                ),
-          borderRadius: BorderRadius.circular(14),
-          border: widget.selected
-              ? null
-              : Border.all(
-                  color: _isFull
-                      ? AppTheme.error.withValues(alpha: 0.4)
-                      : const Color(0xFFDBEAFE),
-                  width: 1.0,
-                ),
-          boxShadow: widget.selected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF4F46E5).withValues(alpha: 0.42),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
+    return Tooltip(
+      message: widget.blockedReason ?? widget.registrationLabel ?? '',
+      child: Semantics(
+        button: canTap,
+        enabled: canTap,
+        label: widget.blockedReason ?? widget.registrationLabel,
+        child: GestureDetector(
+          onTapDown: canTap ? (_) => setState(() => _pressed = true) : null,
+          onTapUp: canTap ? (_) => setState(() => _pressed = false) : null,
+          onTapCancel: canTap ? () => setState(() => _pressed = false) : null,
+          onTap: canTap ? widget.onTap : null,
+          child: AnimatedContainer(
+            duration: AppAnimations.fast,
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.diagonal3Values(
+              _pressed ? 0.94 : 1.0,
+              _pressed ? 0.94 : 1.0,
+              1.0,
+            ),
+            constraints: const BoxConstraints(
+              minWidth: AppSpacing.minTouchTarget,
+              minHeight: 56,
+            ),
+            decoration: BoxDecoration(
+              color: _isBlocked
+                  ? AppTheme.errorLight
+                  : widget.selected
+                  ? null
+                  : _isFull
+                  ? AppTheme.errorLight
+                  : null,
+              gradient: _isBlocked
+                  ? null
+                  : widget.selected
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                    )
+                  : _isFull
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
+                    ),
+              borderRadius: BorderRadius.circular(14),
+              border: _isBlocked
+                  ? Border.all(
+                      color: AppTheme.error.withValues(alpha: 0.5),
+                      width: 1.2,
+                    )
+                  : widget.selected
+                  ? null
+                  : Border.all(
+                      color: _isFull
+                          ? AppTheme.error.withValues(alpha: 0.4)
+                          : const Color(0xFFDBEAFE),
+                      width: 1.0,
+                    ),
+              boxShadow: widget.selected && !_isBlocked
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF4F46E5).withValues(alpha: 0.42),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    _isBlocked
+                        ? Icons.event_busy_outlined
+                        : widget.selected
+                        ? Icons.check_rounded
+                        : (_isFull
+                              ? Icons.lock_outline_rounded
+                              : Icons.add_rounded),
+                    key: ValueKey(
+                      _isBlocked
+                          ? 'scheduled'
+                          : widget.selected
+                          ? 'check'
+                          : (_isFull ? 'full' : 'add'),
+                    ),
+                    size: 20,
+                    color: _isBlocked
+                        ? AppTheme.error
+                        : widget.selected
+                        ? AppTheme.white
+                        : _isFull
+                        ? AppTheme.error
+                        : const Color(0xFF3B82F6),
                   ),
-                ]
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.03),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                ),
+                if (_isBlocked) ...[
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Đã xếp',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.error,
+                    ),
+                  ),
+                ] else if (widget.registrationLabel?.isNotEmpty == true) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.registrationLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      color: widget.selected
+                          ? AppTheme.white.withValues(alpha: 0.95)
+                          : const Color(0xFF7C3AED),
+                    ),
                   ),
                 ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              transitionBuilder: (child, animation) =>
-                  ScaleTransition(scale: animation, child: child),
-              child: Icon(
-                widget.selected
-                    ? Icons.check_rounded
-                    : (_isFull
-                          ? Icons.lock_outline_rounded
-                          : Icons.add_rounded),
-                key: ValueKey(
-                  widget.selected ? 'check' : (_isFull ? 'full' : 'add'),
-                ),
-                size: 20,
-                color: widget.selected
-                    ? AppTheme.white
-                    : _isFull
-                    ? AppTheme.error
-                    : const Color(0xFF3B82F6),
-              ),
+                if (widget.showOccupancy && widget.occupiedCount != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${widget.occupiedCount}/${widget.maxOccupancy}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: widget.selected
+                          ? AppTheme.white.withValues(alpha: 0.95)
+                          : _isFull
+                          ? AppTheme.error
+                          : const Color(0xFF1E40AF),
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    _isFull
+                        ? 'Đã đủ'
+                        : 'Còn ${widget.maxOccupancy - widget.occupiedCount!} chỗ',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      color: widget.selected
+                          ? AppTheme.white.withValues(alpha: 0.9)
+                          : _isFull
+                          ? AppTheme.mediumGray
+                          : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            if (widget.showOccupancy && widget.occupiedCount != null) ...[
-              const SizedBox(height: 3),
-              Text(
-                '${widget.occupiedCount}/${widget.maxOccupancy}',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: widget.selected
-                      ? AppTheme.white.withValues(alpha: 0.95)
-                      : _isFull
-                      ? AppTheme.error
-                      : const Color(0xFF1E40AF),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -166,6 +241,9 @@ class SlotRegistrationMatrix extends StatelessWidget {
     this.enabled = true,
     this.occupancyMap,
     this.showOccupancy = false,
+    this.maxOccupancy = 3,
+    this.registrationLabels = const {},
+    this.blockedReasons = const {},
     this.dayCount = 6,
     this.slotCount = 5,
   });
@@ -176,6 +254,9 @@ class SlotRegistrationMatrix extends StatelessWidget {
   final bool enabled;
   final Map<String, int>? occupancyMap;
   final bool showOccupancy;
+  final int maxOccupancy;
+  final Map<String, String> registrationLabels;
+  final Map<String, String> blockedReasons;
   final int dayCount;
   final int slotCount;
 
@@ -303,10 +384,14 @@ class SlotRegistrationMatrix extends StatelessWidget {
                               // Generous whitespace between columns
                               padding: const EdgeInsets.all(5),
                               child: SlotMatrixCell(
+                                key: ValueKey('slot-cell-$key'),
                                 selected: selectedKeys.contains(key),
                                 enabled: enabled,
                                 showOccupancy: showOccupancy,
                                 occupiedCount: showOccupancy ? occupied : null,
+                                maxOccupancy: maxOccupancy,
+                                registrationLabel: registrationLabels[key],
+                                blockedReason: blockedReasons[key],
                                 onTap: () => onToggle(day, slot),
                               ),
                             ),

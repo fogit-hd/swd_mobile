@@ -124,7 +124,7 @@ class _ReviewResultsScreenState extends State<ReviewResultsScreen> {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Bài chấm chưa được gửi. Chỉ xem được sau khi đã nộp nhận xét.',
+                'Nhận xét chưa được gửi. Chỉ xem được sau khi giảng viên đã nộp.',
                 style: TextStyle(color: AppTheme.mediumGray),
               ),
             ),

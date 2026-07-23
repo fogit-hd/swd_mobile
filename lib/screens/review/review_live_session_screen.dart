@@ -404,7 +404,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
       );
       await _persistNoteIfAny(service);
 
-      // Kết thúc buổi còn yêu cầu mọi reviewer đã GỬI bài chấm checklist.
+      // Kết thúc buổi còn yêu cầu mọi reviewer đã gửi checklist nhận xét.
       final submissionId = widget.submissionId;
       if (submissionId != null && submissionId > 0) {
         final submission = await ReviewService(
@@ -416,7 +416,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
           final goFill = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Chưa gửi bài chấm'),
+              title: const Text('Chưa gửi nhận xét'),
               content: const Text(
                 'Điểm danh đã lưu. Để kết thúc buổi, bạn cần gửi checklist nhận xét '
                 'ở form review (và các giảng viên được phân công khác cũng phải gửi).',
@@ -439,7 +439,7 @@ class _ReviewLiveSessionScreenState extends State<ReviewLiveSessionScreen> {
               MaterialPageRoute<void>(
                 builder: (_) => ReviewSubmissionScreen(
                   submissionId: submissionId,
-                  sessionTitle: widget.groupCode ?? 'Bài chấm review',
+                  sessionTitle: widget.groupCode ?? 'Nhận xét review',
                 ),
               ),
             );

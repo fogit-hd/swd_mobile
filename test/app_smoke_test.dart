@@ -31,6 +31,17 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('review-scope-today')), findsOneWidget);
+    expect(find.byKey(const ValueKey('review-scope-upcoming')), findsOneWidget);
+    expect(find.byKey(const ValueKey('review-scope-all')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('review-scope-upcoming')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const ValueKey('review-scope-all')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
 
     await tester.tap(
       find.widgetWithIcon(ScaleTap, Icons.grid_view_rounded).last,

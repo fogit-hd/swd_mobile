@@ -590,7 +590,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Gửi bài chấm'),
+                          : const Text('Gửi nhận xét'),
                     ),
                   ),
                 ],

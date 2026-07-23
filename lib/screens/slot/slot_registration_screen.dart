@@ -21,6 +21,7 @@ class SlotRegistrationScreen extends StatefulWidget {
     super.key,
     this.mode = SlotRegistrationMode.lecturer,
     this.occupancyMap,
+    this.maxRegistrationsPerSlot,
     this.initialSelection = const {},
     this.onSave,
     this.onSubmit,
@@ -33,6 +34,7 @@ class SlotRegistrationScreen extends StatefulWidget {
 
   final SlotRegistrationMode mode;
   final Map<String, int>? occupancyMap;
+  final int? maxRegistrationsPerSlot;
   final Set<String> initialSelection;
   final Future<void> Function(Set<String> keys)? onSave;
   final Future<void> Function(Set<String> keys)? onSubmit;
@@ -62,6 +64,8 @@ class _LecturerSlotRegistrationScreenState
   bool _loading = false;
   String? _error;
   bool _initialized = false;
+  Map<String, int> _slotRegistrationCounts = const {};
+  int _maxRegistrationsPerSlot = 4;
 
   @override
   void didChangeDependencies() {
@@ -81,6 +85,8 @@ class _LecturerSlotRegistrationScreenState
     if (auth.isDemoMode) {
       setState(() {
         _selected = Set.from(MockSampleData.preselectedSlotKeys);
+        _slotRegistrationCounts = MockSampleData.lecturerRegistrationCounts;
+        _maxRegistrationsPerSlot = 4;
         _isSubmitted = false;
         _loading = false;
       });
@@ -94,15 +100,16 @@ class _LecturerSlotRegistrationScreenState
       _error = null;
     });
     try {
-      final week = await ReviewService(
-        ApiClient(auth),
-      ).fetchAvailabilityWeek(roundId: ctx.roundId);
+      final service = ReviewService(ApiClient(auth));
+      final week = await service.fetchAvailabilityWeek(roundId: ctx.roundId);
       if (!mounted) return;
       setState(() {
         _selected = week.slots
             .map((s) => SlotRegistrationMatrix.cellKey(s.dayOfWeek, s.slot))
             .toSet();
         _isSubmitted = week.isSubmitted;
+        _slotRegistrationCounts = week.registrationCountMap;
+        _maxRegistrationsPerSlot = week.maxRegistrationsPerSlot;
         _loading = false;
       });
     } catch (e) {
@@ -150,7 +157,11 @@ class _LecturerSlotRegistrationScreenState
         ApiClient(auth),
       ).saveAvailabilityWeek(roundId: ctx.roundId, slots: _toSlots(keys));
       if (!mounted) return false;
-      setState(() => _isSubmitted = week.isSubmitted);
+      setState(() {
+        _isSubmitted = week.isSubmitted;
+        _slotRegistrationCounts = week.registrationCountMap;
+        _maxRegistrationsPerSlot = week.maxRegistrationsPerSlot;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã lưu bản nháp đăng ký Slot')),
       );
@@ -183,7 +194,11 @@ class _LecturerSlotRegistrationScreenState
         ApiClient(auth),
       ).submitAvailabilityWeek(roundId: ctx.roundId);
       if (!mounted) return;
-      setState(() => _isSubmitted = week.isSubmitted);
+      setState(() {
+        _isSubmitted = week.isSubmitted;
+        _slotRegistrationCounts = week.registrationCountMap;
+        _maxRegistrationsPerSlot = week.maxRegistrationsPerSlot;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã gửi đăng ký cho phòng đào tạo')),
       );
@@ -244,6 +259,8 @@ class _LecturerSlotRegistrationScreenState
             enabled: _context?.round.isOpen ?? false,
             isSubmitted: _isSubmitted,
             roundStatusLabel: _context?.round.statusLabel,
+            occupancyMap: _slotRegistrationCounts,
+            maxRegistrationsPerSlot: _maxRegistrationsPerSlot,
             onSave: _save,
             onSubmit: _submit,
           ),
@@ -532,9 +549,16 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                         ),
                         _buildLegendDot(const Color(0xFF2563EB), 'Đang chọn'),
                         _buildLegendDot(
-                          AppTheme.errorLight,
-                          'Đã khóa',
-                          border: AppTheme.error.withValues(alpha: 0.4),
+                          const Color(0xFFEDE9FE),
+                          widget.mode == SlotRegistrationMode.lecturer
+                              ? 'Số Giảng viên đã đăng ký / ${widget.maxRegistrationsPerSlot ?? 4}'
+                              : 'Số nhóm đã đăng ký / ${widget.maxRegistrationsPerSlot ?? 3}',
+                          border: const Color(0xFF8B5CF6),
+                        ),
+                        _buildLegendDot(
+                          const Color(0xFFE2E8F0),
+                          'Đã đủ đăng ký',
+                          border: const Color(0xFF94A3B8),
                         ),
                       ],
                     ),
@@ -580,8 +604,11 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                   SlotRegistrationMatrix(
                     selectedKeys: _selected,
                     enabled: widget.enabled && !saving,
-                    showOccupancy: widget.mode == SlotRegistrationMode.student,
+                    showOccupancy: true,
                     occupancyMap: widget.occupancyMap,
+                    maxOccupancy:
+                        widget.maxRegistrationsPerSlot ??
+                        (widget.mode == SlotRegistrationMode.lecturer ? 4 : 3),
                     onToggle: _toggle,
                   ),
                 ],

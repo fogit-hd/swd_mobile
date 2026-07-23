@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app/auth_scope.dart';
@@ -20,6 +21,19 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   static const _enableDemoMode = bool.fromEnvironment('ENABLE_DEMO_MODE');
+  static const _enableQuickLogin = bool.fromEnvironment(
+    'ENABLE_LECTURER_QUICK_LOGIN',
+  );
+  static const _quickLoginUsername = String.fromEnvironment(
+    'LECTURER_QUICK_USERNAME',
+    defaultValue: 'minhnd.gv24001@fpt.edu.vn',
+  );
+  static const _quickLoginPassword = String.fromEnvironment(
+    'LECTURER_QUICK_PASSWORD',
+  );
+
+  static const _showQuickLogin =
+      kDebugMode && _enableQuickLogin && _quickLoginPassword != '';
 
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
@@ -104,14 +118,31 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    await _authenticate(
+      username: _usernameController.text.trim(),
+      password: _passwordController.text,
+    );
+  }
+
+  Future<void> _quickLogin() async {
+    _usernameController.text = _quickLoginUsername;
+    _passwordController.text = _quickLoginPassword;
+
+    await _authenticate(
+      username: _quickLoginUsername,
+      password: _quickLoginPassword,
+    );
+  }
+
+  Future<void> _authenticate({
+    required String username,
+    required String password,
+  }) async {
     setState(() => _loading = true);
     final auth = AuthScope.of(context);
 
     try {
-      await auth.login(
-        username: _usernameController.text.trim(),
-        password: _passwordController.text,
-      );
+      await auth.login(username: username, password: password);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } on AuthException catch (e) {
@@ -413,6 +444,28 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
                                 ),
+                                if (_showQuickLogin) ...[
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    key: const ValueKey(
+                                      'lecturer-quick-login-button',
+                                    ),
+                                    onPressed: _loading ? null : _quickLogin,
+                                    icon: const Icon(Icons.bolt_rounded),
+                                    label: const Text(
+                                      'Đăng nhập nhanh · Nguyễn Đức Minh',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _quickLoginUsername,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: AppTheme.mediumGray,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                                 if (_enableDemoMode) ...[
                                   const SizedBox(height: 12),
                                   OutlinedButton.icon(

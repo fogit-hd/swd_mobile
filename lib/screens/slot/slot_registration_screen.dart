@@ -426,7 +426,7 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                       size: 12,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     widget.mode == SlotRegistrationMode.lecturer
                                         ? 'GIẢNG VIÊN REVIEW'
@@ -434,8 +434,8 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                     style: const TextStyle(
                                       color: AppTheme.white,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 11,
-                                      letterSpacing: 0.5,
+                                      fontSize: 10.5,
+                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ],
@@ -476,13 +476,13 @@ class _SlotRegistrationScreenState extends State<SlotRegistrationScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     'Đã chọn: ${_selected.length} Slot',
                                     style: const TextStyle(
                                       color: Color(0xFF38BDF8),
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                     ),
                                   ),
                                 ],

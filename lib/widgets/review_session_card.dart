@@ -37,27 +37,15 @@ class ReviewSessionCard extends StatelessWidget {
               : accentColor.withValues(alpha: 0.22),
           width: highlight ? 1.8 : 1.2,
         ),
-        boxShadow: AppTheme.cardShadow,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Điểm nhấn 1: Dải màu Gradient chỉ thị trạng thái bên trái thẻ
-              Container(
-                width: 5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: isSubmitted
-                        ? [const Color(0xFF2563EB), const Color(0xFF4F46E5)]
-                        : [const Color(0xFF94A3B8), const Color(0xFF64748B)],
-                  ),
-                ),
-              ),
               Expanded(
                 child: Material(
                   color: Colors.transparent,
@@ -187,10 +175,43 @@ class ReviewSessionCard extends StatelessWidget {
                           ?trailing,
                         ],
                       ),
+                    ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule,
+                          size: 16,
+                          color: AppTheme.mediumGray,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          session.timeLabel,
+                          style: const TextStyle(
+                            color: AppTheme.mediumGray,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Icon(
+                          Icons.meeting_room_outlined,
+                          size: 16,
+                          color: AppTheme.mediumGray,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          session.room ?? '—',
+                          style: const TextStyle(
+                            color: AppTheme.mediumGray,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
               ),
+              ?trailing,
             ],
           ),
         ),
@@ -207,14 +228,11 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSubmitted = label == 'Đã gửi';
-    final fg = isSubmitted ? AppTheme.white : AppTheme.darkGray;
-    final bg = isSubmitted ? AppTheme.primary : AppTheme.lightGray;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
+        color: isSubmitted ? AppTheme.primary : AppTheme.lightGray,
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

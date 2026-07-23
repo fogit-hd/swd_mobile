@@ -9,10 +9,9 @@ import '../../widgets/animated_bottom_nav.dart';
 import '../../widgets/animated_shell_body.dart';
 import '../schedule/lecturer_schedule_list_screen.dart';
 import '../slot/slot_registration_screen.dart';
-import 'lecturer_defense_sessions_screen.dart';
 import 'lecturer_review_projects_screen.dart';
 
-/// Shell chính Giảng viên — 4 tab theo flow nghiệp vụ review với điểm nhấn nền Ambient Mesh & Glassmorphic Banner.
+/// Shell chính Giảng viên — 3 tab theo flow nghiệp vụ review với điểm nhấn nền Ambient Mesh & Glassmorphic Banner.
 class LecturerShell extends StatefulWidget {
   const LecturerShell({super.key});
 
@@ -29,7 +28,6 @@ class _LecturerShellState extends State<LecturerShell>
     (icon: Icons.calendar_month_outlined, label: 'Lịch chấm'),
     (icon: Icons.rate_review_outlined, label: 'Dự án review'),
     (icon: Icons.grid_view_rounded, label: 'Đăng ký ca'),
-    (icon: Icons.gavel_outlined, label: 'Bảo vệ'),
   ];
 
   @override
@@ -135,7 +133,10 @@ class _LecturerShellState extends State<LecturerShell>
               return Stack(
                 children: [
                   Align(
-                    alignment: Alignment(-0.85 + 0.3 * math.sin(angle), -0.7 + 0.2 * math.cos(angle)),
+                    alignment: Alignment(
+                      -0.85 + 0.3 * math.sin(angle),
+                      -0.7 + 0.2 * math.cos(angle),
+                    ),
                     child: Container(
                       width: 320,
                       height: 320,
@@ -151,7 +152,10 @@ class _LecturerShellState extends State<LecturerShell>
                     ),
                   ),
                   Align(
-                    alignment: Alignment(0.85 - 0.25 * math.cos(angle), 0.5 + 0.25 * math.sin(angle)),
+                    alignment: Alignment(
+                      0.85 - 0.25 * math.cos(angle),
+                      0.5 + 0.25 * math.sin(angle),
+                    ),
                     child: Container(
                       width: 360,
                       height: 360,
@@ -167,7 +171,10 @@ class _LecturerShellState extends State<LecturerShell>
                     ),
                   ),
                   Align(
-                    alignment: Alignment(0.1 + 0.35 * math.sin(angle * 1.3), -0.2 + 0.3 * math.cos(angle * 1.3)),
+                    alignment: Alignment(
+                      0.1 + 0.35 * math.sin(angle * 1.3),
+                      -0.2 + 0.3 * math.cos(angle * 1.3),
+                    ),
                     child: Container(
                       width: 280,
                       height: 280,
@@ -197,7 +204,6 @@ class _LecturerShellState extends State<LecturerShell>
               LecturerScheduleListScreen(),
               LecturerReviewProjectsScreen(),
               LecturerSlotRegistrationScreen(),
-              LecturerDefenseSessionsScreen(),
             ],
           ),
         ],
@@ -229,8 +235,6 @@ class _RedirectToLoginState extends State<_RedirectToLogin> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
